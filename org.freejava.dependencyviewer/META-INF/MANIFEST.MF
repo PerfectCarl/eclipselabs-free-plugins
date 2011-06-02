@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: FreeJava Tools Plug-in
-Bundle-SymbolicName: org.freejava.tools; singleton:=true
+Bundle-SymbolicName: org.freejava.dependencyviewer;singleton:=true
 Bundle-Version: 1.0.0
 Bundle-Activator: org.freejava.tools.Activator
 Require-Bundle: org.eclipse.ui,
