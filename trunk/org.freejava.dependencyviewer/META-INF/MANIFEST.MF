@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: FreeJava Tools Plug-in
+Bundle-SymbolicName: org.freejava.tools; singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Activator: org.freejava.tools.Activator
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.core.databinding,
+ org.eclipse.core.databinding.beans,
+ org.eclipse.jface.databinding,
+ com.ibm.icu,
+ org.eclipse.update.core,
+ org.eclipse.core.resources,
+ org.eclipse.jdt.core,
+ org.eclipse.ui.console,
+ org.eclipse.zest.core;resolution:=optional,
+ org.eclipse.zest.layouts;resolution:=optional
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-ClassPath: lib/DependencyFinder.jar,
+ lib/guava.jar,
+ lib/jakarta-oro.jar,
+ lib/log4j.jar,
+ .
