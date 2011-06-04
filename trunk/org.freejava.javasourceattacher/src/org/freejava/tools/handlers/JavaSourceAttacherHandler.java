@@ -1,9 +1,7 @@
 package org.freejava.tools.handlers;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -114,7 +112,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     if (!foundSrc) {
                         File sourceFile = getSourceFileFromGoogle(file);
                         if (sourceFile != null) {
-                            attachSource(pkgRoot, sourceFile.getAbsolutePath(), "");
+                            attachSource(pkgRoot, sourceFile.getAbsolutePath(), null);
                         }
                     }
                 }
@@ -128,19 +126,44 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
     protected static void attachSource(IPackageFragmentRoot root, String sourcePath, String sourceRoot) throws JavaModelException {
         IJavaProject javaProject = root.getJavaProject();
         IClasspathEntry[] entries = (IClasspathEntry[])javaProject.getRawClasspath().clone();
+        boolean found = false;
         for (int i = 0; i < entries.length; i++){
                 IClasspathEntry entry = entries[i];
-                if (entry.getPath().toOSString().toLowerCase().equals(root.getPath().toOSString().toLowerCase())) {
+                String entryPath = entry.getPath().toOSString();
+                String rootPath = root.getPath().toOSString();
+                if (entryPath.equals(rootPath)) {
                         entries[i] = JavaCore.newLibraryEntry(
                                 root.getPath(),
                                 sourcePath == null ? null : new Path(sourcePath),
                                 sourceRoot == null ? null : new Path(sourceRoot),
                                 false);
+                        found = true;
                         break;
                 }
         }
+        if (!found) {
+            // try to use file name only
+            for (int i = 0; i < entries.length; i++){
+                IClasspathEntry entry = entries[i];
+                String entryPath = entry.getPath().toOSString();
+                String entryName = entryPath.substring(Math.max(entryPath.lastIndexOf('/'), entryPath.lastIndexOf('\\')) + 1);
+                String rootPath = root.getPath().toOSString();
+                String rootName = rootPath.substring(Math.max(rootPath.lastIndexOf('/'), rootPath.lastIndexOf('\\')) + 1);
+                if (entryName.equals(rootName)) {
+                    // Problem: lost classpath variable here!!!
+                    entries[i] = JavaCore.newLibraryEntry(
+                            root.getPath(),
+                            sourcePath == null ? null : new Path(sourcePath),
+                            sourceRoot == null ? null : new Path(sourceRoot),
+                            false);
+                    found = true;
+                    break;
+                }
+            }
+        }
         javaProject.setRawClasspath(entries, null);
-}
+    }
+
     private static GAV getGAV(File binFile) throws IOException {
         GAV result = null;
         String sha1 = DigestUtils.shaHex(FileUtils.openInputStream(binFile));
