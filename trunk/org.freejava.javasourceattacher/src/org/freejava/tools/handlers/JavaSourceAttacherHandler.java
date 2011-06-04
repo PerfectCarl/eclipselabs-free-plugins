@@ -24,9 +24,12 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -83,12 +86,13 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         for (IPackageFragmentRoot pkgRoot : roots) {
             try {
                 if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY && pkgRoot.getSourceAttachmentPath() == null) {
-                    File file = pkgRoot.getPath().toFile();
+                    File file = pkgRoot.getResource().getLocation().toFile();
                     GAV gav = getGAV(file);
                     if (gav != null) {
                         File sourceFile = resolveArtifactSrc(gav);
                         if (sourceFile != null) {
-                            pkgRoot.attachSource(new Path(sourceFile.getAbsolutePath()), null, null);
+                            //pkgRoot.attachSource(new Path(sourceFile.getAbsolutePath()), new Path(""), null);
+                            attachSource(pkgRoot, sourceFile.getAbsolutePath(), "");
                         }
                     }
                 }
@@ -99,17 +103,32 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 
 
     }
-
+    protected static void attachSource(IPackageFragmentRoot root, String sourcePath, String sourceRoot) throws JavaModelException {
+        IJavaProject javaProject = root.getJavaProject();
+        IClasspathEntry[] entries = (IClasspathEntry[])javaProject.getRawClasspath().clone();
+        for (int i = 0; i < entries.length; i++){
+                IClasspathEntry entry = entries[i];
+                if (entry.getPath().toOSString().toLowerCase().equals(root.getPath().toOSString().toLowerCase())) {
+                        entries[i] = JavaCore.newLibraryEntry(
+                                root.getPath(),
+                                sourcePath == null ? null : new Path(sourcePath),
+                                sourceRoot == null ? null : new Path(sourceRoot),
+                                false);
+                        break;
+                }
+        }
+        javaProject.setRawClasspath(entries, null);
+}
     private static GAV getGAV(File binFile) throws IOException {
         GAV result = null;
         String sha1 = DigestUtils.shaHex(FileUtils.openInputStream(binFile));
         System.out.println(sha1);
-        //result = getGAVOnCentralBySHA1(binFile, sha1);
+        result = getGAVOnCentralBySHA1(binFile, sha1);
         if (result == null) {
         //    result = getGAVOnSonatypeBySHA1(binFile, sha1);
         }
         if (result == null) {
-            result = getGAVOnGoogleBySHA1(binFile, sha1);
+            //result = getGAVOnGoogleBySHA1(binFile, sha1);
         }
         return result;
     }
@@ -195,7 +214,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return gav;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         File bin = new File("D:\\projects\\free-plugins\\org.freejava.javasourceattacher\\lib\\commons-io-1.4.jar");
         GAV gav = null;
         gav = getGAV(bin);
@@ -208,13 +227,15 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         System.out.println("G:" + gav.getG());
         System.out.println("A:" + gav.getA());
         System.out.println("V:" + gav.getV());
+        resolveArtifactSrc(gav);
 
     }
 
-    public File resolveArtifactSrc(GAV srcinfo) throws Exception {
+    public static File resolveArtifactSrc(GAV srcinfo) throws Exception {
         String groupId = srcinfo.getG();
         String artifactId = srcinfo.getA();
         String version = srcinfo.getV();
+
         //creates clear ivy settings
         IvySettings ivySettings = new IvySettings();
         IBiblioResolver resolver = new IBiblioResolver();
