@@ -91,8 +91,13 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
     private void updateSourceAttachments(List<IPackageFragmentRoot> roots) {
         for (IPackageFragmentRoot pkgRoot : roots) {
             try {
-                if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY && pkgRoot.getSourceAttachmentPath() == null) {
-                    File file = pkgRoot.getResource().getLocation().toFile();
+                if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY && pkgRoot.getSourceAttachmentPath() == null && pkgRoot.isArchive()) {
+                    File file;
+                    if (!pkgRoot.isExternal()) {
+                        file = pkgRoot.getResource().getLocation().toFile();
+                    } else {
+                        file = pkgRoot.getPath().toFile();
+                    }
 
                     boolean foundSrc = false;
                     // Try to find source using Maven repos
