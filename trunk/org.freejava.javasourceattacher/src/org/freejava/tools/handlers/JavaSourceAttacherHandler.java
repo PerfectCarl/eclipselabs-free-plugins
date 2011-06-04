@@ -2,17 +2,19 @@ package org.freejava.tools.handlers;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.ivy.Ivy;
 import org.apache.ivy.core.report.ResolveReport;
 import org.apache.ivy.core.resolve.ResolveOptions;
@@ -21,6 +23,7 @@ import org.apache.ivy.plugins.resolver.IBiblioResolver;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
@@ -71,30 +74,21 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                 }
             }
         }
-        findSource(selections);
+        updateSourceAttachments(selections);
 
         return null;
     }
 
-    private void findSource(List<IPackageFragmentRoot> roots) {
+    private void updateSourceAttachments(List<IPackageFragmentRoot> roots) {
         for (IPackageFragmentRoot pkgRoot : roots) {
             try {
                 if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY && pkgRoot.getSourceAttachmentPath() == null) {
-                    Collection<File> jarFiles = new ArrayList<File>();
-                    jarFiles.add(pkgRoot.getPath().toFile());
-                    Map<File, Map<String, String>> jarFileInfo = getLibInfo(jarFiles);
-                    if (!jarFileInfo.isEmpty()) {
-                        Map<String, String> srcinfo = jarFileInfo.values().iterator().next();
-                        if (srcinfo.get("scope") == null || !srcinfo.get("scope").equals("system")) {
-                            String type = srcinfo.get("type");
-                            if (type == null || type.equals("jar")) {
-                                String groupId = srcinfo.get("groupId");
-                                String artifactId = srcinfo.get("artifactId");
-                                String version = srcinfo.get("version");
-                                System.out.println(groupId + ";" + artifactId + ";" + version);
-                                File f = resolveArtifactSrc(groupId, artifactId, version);
-                                System.out.println(f.getAbsolutePath());
-                            }
+                    File file = pkgRoot.getPath().toFile();
+                    GAV gav = getGAV(file);
+                    if (gav != null) {
+                        File sourceFile = resolveArtifactSrc(gav);
+                        if (sourceFile != null) {
+                            pkgRoot.attachSource(new Path(sourceFile.getAbsolutePath()), null, null);
                         }
                     }
                 }
@@ -106,36 +100,121 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 
     }
 
-    private static Map<File, Map<String, String>> getLibInfo(Collection<File> jarFiles) throws IOException {
-            Properties properties = new Properties();
-        InputStream is = JavaSourceAttacherHandler.class.getResourceAsStream("/jarinfo.properties");
-        properties.load(is);
-        is.close();
-            Map<File, Map<String, String>> result = new Hashtable<File, Map<String,String>>();
-            for (File jarFile : jarFiles) {
-                    String name = jarFile.getName();
-                    String basename = FilenameUtils.getBaseName(name);
-                    long size = jarFile.length();
-                    Map<String, String> info = new Hashtable<String, String>();
-                    result.put(jarFile, info);
-                    String key = name + ":" + size;
-                    if (properties.containsKey(key)) {
-                            String values = properties.getProperty(key);
-                            String[] mavenInfo = values.split(":"); // org.slf4j, slf4j-api, jar, 1.6.0
-                            info.put("groupId", mavenInfo[0]);
-                            info.put("artifactId", mavenInfo[1]);
-                            info.put("type", mavenInfo[2]);
-                            info.put("version", mavenInfo[3]);
-                            if (mavenInfo.length > 4 && "system".equals(mavenInfo[4])) {
-                                    info.put("scope", "system");
-                                    info.put("systemPath", jarFile.getAbsolutePath());
-                            }
-                    }
-            }
-            return result;
+    private static GAV getGAV(File binFile) throws IOException {
+        GAV result = null;
+        String sha1 = DigestUtils.shaHex(FileUtils.openInputStream(binFile));
+        System.out.println(sha1);
+        //result = getGAVOnCentralBySHA1(binFile, sha1);
+        if (result == null) {
+        //    result = getGAVOnSonatypeBySHA1(binFile, sha1);
+        }
+        if (result == null) {
+            result = getGAVOnGoogleBySHA1(binFile, sha1);
+        }
+        return result;
     }
 
-    public File resolveArtifactSrc(String groupId, String artifactId, String version) throws Exception {
+    private static GAV getGAVOnCentralBySHA1(File binFile, String sha1) {
+        GAV gav = null;
+        try {
+            String json = IOUtils.toString(new URL("http://search.maven.org/solrsearch/select?q=" + URLEncoder.encode("1:\"" + sha1 + "\"", "UTF-8") + "&rows=20&wt=json").openStream());
+            JSONObject jsonObject = JSONObject.fromObject(json);
+            JSONObject response = jsonObject.getJSONObject("response");
+            for (int i = 0; i < response.getInt("numFound"); i++) {
+                JSONArray docs = response.getJSONArray("docs");
+                JSONObject doci = docs.getJSONObject(i);
+                boolean hasSource = false;
+                JSONArray ec = doci.getJSONArray("ec");
+                String[] s = new String[ec.size()];
+                for (int j = 0; j < ec.size(); j++) {
+                    if ("sources.jar".equals(ec.getString(j))) {
+                        hasSource  = true;
+                        break;
+                    }
+                }
+                if (!hasSource) continue;
+
+                gav = new GAV();
+                gav.setRepositoryUrl("http://repo1.maven.org/maven2/");
+                gav.setG(doci.getString("g"));
+                gav.setA(doci.getString("a"));
+                gav.setV(doci.getString("v"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return gav;
+    }
+
+    private static GAV getGAVOnSonatypeBySHA1(File binFile, String sha1) {
+        GAV gav = null;
+        try {
+            URL url = new URL("http://repository.sonatype.org/service/local/data_index?sha1=" + sha1);
+            URLConnection con = url.openConnection();
+            con.setRequestProperty("Accept", "application/json");
+            con.setRequestProperty("Content-Type", "application/json");
+            String json = IOUtils.toString(con.getInputStream());
+            System.out.println(json);
+            JSONObject jsonObject = JSONObject.fromObject(json);
+            JSONArray data = jsonObject.getJSONArray("data");
+            for (int i = 0; i < data.size(); i++) {
+                JSONObject doci = data.getJSONObject(i);
+                gav = new GAV();
+                gav.setG(doci.getString("groupId"));
+                gav.setA(doci.getString("artifectId"));
+                gav.setV(doci.getString("version"));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return gav;
+    }
+
+    private static GAV getGAVOnGoogleBySHA1(File binFile, String sha1) {
+        GAV gav = null;
+        try {
+            URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
+                    + "q=" + sha1);
+            URLConnection connection = url.openConnection();
+            String json = IOUtils.toString(connection.getInputStream());
+            System.out.println(json);
+            JSONObject jsonObject = JSONObject.fromObject(json);
+            if (jsonObject.getInt("responseStatus") == 200) {
+                JSONObject responseData = jsonObject.getJSONObject("responseData");
+                JSONArray array = responseData.getJSONArray("results");
+                for (int i = 0; i < array.size(); i ++) {
+                    JSONObject obj = array.getJSONObject(i);
+                    String rsurl = obj.getString("url");
+                    System.out.println(rsurl);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return gav;
+    }
+
+    public static void main(String[] args) throws IOException {
+        File bin = new File("D:\\projects\\free-plugins\\org.freejava.javasourceattacher\\lib\\commons-io-1.4.jar");
+        GAV gav = null;
+        gav = getGAV(bin);
+        System.out.println("G:" + gav.getG());
+        System.out.println("A:" + gav.getA());
+        System.out.println("V:" + gav.getV());
+
+        bin = new File("C:/Documents and Settings/Thai Ha/My Documents/Downloads/ant-1.5.1.jar");
+        gav = getGAV(bin);
+        System.out.println("G:" + gav.getG());
+        System.out.println("A:" + gav.getA());
+        System.out.println("V:" + gav.getV());
+
+    }
+
+    public File resolveArtifactSrc(GAV srcinfo) throws Exception {
+        String groupId = srcinfo.getG();
+        String artifactId = srcinfo.getA();
+        String version = srcinfo.getV();
         //creates clear ivy settings
         IvySettings ivySettings = new IvySettings();
         IBiblioResolver resolver = new IBiblioResolver();
