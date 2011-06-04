@@ -1,13 +1,19 @@
 package org.freejava.tools.handlers;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -87,11 +93,22 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             try {
                 if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY && pkgRoot.getSourceAttachmentPath() == null) {
                     File file = pkgRoot.getResource().getLocation().toFile();
+
+                    boolean foundSrc = false;
+                    // Try to find source using Maven repos
                     GAV gav = getGAV(file);
                     if (gav != null) {
                         File sourceFile = resolveArtifactSrc(gav);
                         if (sourceFile != null) {
                             //pkgRoot.attachSource(new Path(sourceFile.getAbsolutePath()), new Path(""), null);
+                            attachSource(pkgRoot, sourceFile.getAbsolutePath(), "");
+                            foundSrc = true;
+                        }
+                    }
+
+                    if (!foundSrc) {
+                        File sourceFile = getSourceFileFromGoogle(file);
+                        if (sourceFile != null) {
                             attachSource(pkgRoot, sourceFile.getAbsolutePath(), "");
                         }
                     }
@@ -126,9 +143,6 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         result = getGAVOnCentralBySHA1(binFile, sha1);
         if (result == null) {
         //    result = getGAVOnSonatypeBySHA1(binFile, sha1);
-        }
-        if (result == null) {
-            //result = getGAVOnGoogleBySHA1(binFile, sha1);
         }
         return result;
     }
@@ -190,45 +204,73 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return gav;
     }
 
-    private static GAV getGAVOnGoogleBySHA1(File binFile, String sha1) {
-        GAV gav = null;
+    private static File getSourceFileFromGoogle(File binFile) {
+        File result = null;
         try {
+            String md5 = DigestUtils.md5Hex(FileUtils.openInputStream(binFile));
             URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                    + "q=" + sha1);
-            URLConnection connection = url.openConnection();
-            String json = IOUtils.toString(connection.getInputStream());
+                    + "q=" + md5);
+            String json = IOUtils.toString(url.openStream());
+            // Guess real file name ([name]-[version].jar)
             System.out.println(json);
-            JSONObject jsonObject = JSONObject.fromObject(json);
-            if (jsonObject.getInt("responseStatus") == 200) {
-                JSONObject responseData = jsonObject.getJSONObject("responseData");
-                JSONArray array = responseData.getJSONArray("results");
-                for (int i = 0; i < array.size(); i ++) {
-                    JSONObject obj = array.getJSONObject(i);
-                    String rsurl = obj.getString("url");
-                    System.out.println(rsurl);
+            Map<String, Integer> counter = new HashMap<String, Integer>();
+            String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
+            Pattern pattern = Pattern.compile(patternStr);
+            Matcher matcher = pattern.matcher(json);
+            while (matcher.find()) {
+                String name = matcher.group();
+                Integer count;
+                if (counter.containsKey(name)) {
+                    count = new Integer(1 + counter.get(name).intValue());
+                } else {
+                    count = new Integer(1);
+                }
+                counter.put(name, count);
+            }
+            String name = null;
+            Integer max = new Integer(0);
+            for (Map.Entry<String, Integer> entry : counter.entrySet()) {
+                if (entry.getValue().compareTo(max) > 0) {
+                    name = entry.getKey();
+                }
+            }
+            if (name != null) {
+                String srcName = name.substring(0, name.length() - ".jar".length()) + "-src.zip";
+                url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
+                        + "q=" + URLEncoder.encode(srcName + " Parent Directory", "UTF-8"));
+                json = IOUtils.toString(url.openStream());
+                System.out.println(json);
+                JSONObject jsonObject = JSONObject.fromObject(json);
+                if (jsonObject.getInt("responseStatus") == 200) {
+                    JSONObject responseData = jsonObject.getJSONObject("responseData");
+                    JSONArray array = responseData.getJSONArray("results");
+                    for (int i = 0; i < array.size(); i ++) {
+                        JSONObject obj = array.getJSONObject(i);
+                        URL srcUrl = new URL(new URL(obj.getString("url")), srcName);
+                        try {
+                            File file = new File(System.getProperty("user.home") + File.separatorChar
+                                    + ".sourceattacher"+ File.separatorChar + srcName);
+                            if (!file.exists()) {
+                                byte[] data = IOUtils.toByteArray(srcUrl.openStream());
+                                FileUtils.writeByteArrayToFile(file, data);
+                            }
+                            result = file;
+                            break;
+                        } catch (Exception e) {
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return gav;
+        return result;
     }
 
     public static void main(String[] args) throws Exception {
-        File bin = new File("D:\\projects\\free-plugins\\org.freejava.javasourceattacher\\lib\\commons-io-1.4.jar");
-        GAV gav = null;
-        gav = getGAV(bin);
-        System.out.println("G:" + gav.getG());
-        System.out.println("A:" + gav.getA());
-        System.out.println("V:" + gav.getV());
-
-        bin = new File("C:/Documents and Settings/Thai Ha/My Documents/Downloads/ant-1.5.1.jar");
-        gav = getGAV(bin);
-        System.out.println("G:" + gav.getG());
-        System.out.println("A:" + gav.getA());
-        System.out.println("V:" + gav.getV());
-        resolveArtifactSrc(gav);
-
+        File bin = new File("D:/projects/free-plugins/org.freejava.javasourceattacher/lib/commons-logging-1.1.1.jar");
+        File src = getSourceFileFromGoogle(bin);
+        System.out.println(src);
     }
 
     public static File resolveArtifactSrc(GAV srcinfo) throws Exception {
