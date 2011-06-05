@@ -2,6 +2,7 @@ package org.freejava.tools.handlers;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -24,6 +25,7 @@ import org.apache.ivy.core.report.ResolveReport;
 import org.apache.ivy.core.resolve.ResolveOptions;
 import org.apache.ivy.core.settings.IvySettings;
 import org.apache.ivy.plugins.resolver.IBiblioResolver;
+import org.cyberneko.html.parsers.DOMParser;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -37,6 +39,12 @@ import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.html.HTMLCollection;
+import org.w3c.dom.html.HTMLDocument;
 
 /**
  * Handler class for View Class/Package Dependency action.
@@ -235,64 +243,123 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
     private static File getSourceFileFromGoogle(File binFile) {
         File result = null;
         try {
-            String md5 = DigestUtils.md5Hex(FileUtils.openInputStream(binFile));
+            String name = findRealName(binFile);
+            result = downloadSourceFile(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private static File downloadSourceFile(String name) throws Exception {
+        File result = null;
+
+        String srcName = name.substring(0, name.length() - ".jar".length()) + "-src.zip";
+        File file = new File(System.getProperty("user.home") + File.separatorChar
+                + ".sourceattacher"+ File.separatorChar + srcName);
+        if (file.exists()) {
+            result = file;
+        } else {
             URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                    + "q=" + md5);
+                    + "q=" + URLEncoder.encode(srcName + " intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
             String json = IOUtils.toString(url.openStream());
+            System.out.println(json);
+            JSONObject jsonObject = JSONObject.fromObject(json);
+            if (jsonObject.getInt("responseStatus") == 200) {
+                JSONObject responseData = jsonObject.getJSONObject("responseData");
+                JSONArray array = responseData.getJSONArray("results");
+                for (int i = 0; i < array.size(); i ++) {
+                    JSONObject obj = array.getJSONObject(i);
+                    URL url2 = new URL(obj.getString("url"));
+                    URL srcUrl = new URL(url2, srcName);
+
+                    HttpURLConnection con = (HttpURLConnection) srcUrl.openConnection();
+
+                    con.setRequestMethod("HEAD");
+                    if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                        DOMParser parser = new DOMParser();
+                        parser.parse(url2.toString());
+                        HTMLDocument document = (HTMLDocument) parser.getDocument();
+                        HTMLCollection links = document.getLinks();
+                        for (int ii = 0; ii < links.getLength(); ii++) {
+                            Node link = links.item(ii);
+                            NamedNodeMap attrs = link.getAttributes();
+                            String href = null;
+                            for (int j = 0; j < attrs.getLength(); j++) {
+                                if ("href".equalsIgnoreCase(attrs.item(j).getNodeName())) {
+                                    href = attrs.item(j).getNodeValue();
+                                }
+                            }
+                            if (!href.startsWith("javascript:") && !href.startsWith("news:")) {
+                                String absHref = new URL(url2, href).toString();
+                                int lastSep = absHref.lastIndexOf('/');
+                                int lastSharp = absHref.lastIndexOf('#');
+                                if (lastSep >= 0 && lastSharp >= 0 && lastSharp > lastSep) {
+                                    absHref = absHref.substring(0, lastSharp);
+                                }
+                                if (absHref.endsWith(".zip")) {
+                                    String urlFile = absHref.substring(absHref.lastIndexOf('/'));
+                                    Pattern pattern = Pattern.compile("[a-zA-Z]+");
+                                    Matcher matcher = pattern.matcher(name);
+                                    if (matcher.find()) {
+                                        String nm = matcher.group();
+                                        if (urlFile.contains(nm) && urlFile.contains("src")) {
+                                            srcUrl = new URL(absHref);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    byte[] data = IOUtils.toByteArray(srcUrl.openStream());
+                    FileUtils.writeByteArrayToFile(file, data);
+                    result = file;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private static String findRealName(File binFile) throws IOException {
+        String name = null;
+
+        // If the file name doesn't have version number, we need to google for a better name
+        if (!Pattern.compile("\\-[0-9]+").matcher(binFile.getName()).find()) {
             // Guess real file name ([name]-[version].jar)
+            String md5 = DigestUtils.md5Hex(FileUtils.openInputStream(binFile));
+            URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&" + "q=" + md5);
+            String json = IOUtils.toString(url.openStream());
             System.out.println(json);
             Map<String, Integer> counter = new HashMap<String, Integer>();
             String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
             Pattern pattern = Pattern.compile(patternStr);
             Matcher matcher = pattern.matcher(json);
             while (matcher.find()) {
-                String name = matcher.group();
+                String nm = matcher.group();
                 Integer count;
-                if (counter.containsKey(name)) {
-                    count = new Integer(1 + counter.get(name).intValue());
+                if (counter.containsKey(nm)) {
+                    count = new Integer(1 + counter.get(nm).intValue());
                 } else {
                     count = new Integer(1);
                 }
-                counter.put(name, count);
+                counter.put(nm, count);
             }
-            String name = null;
             Integer max = new Integer(0);
             for (Map.Entry<String, Integer> entry : counter.entrySet()) {
                 if (entry.getValue().compareTo(max) > 0) {
                     name = entry.getKey();
                 }
             }
-            if (name != null) {
-                String srcName = name.substring(0, name.length() - ".jar".length()) + "-src.zip";
-                url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                        + "q=" + URLEncoder.encode(srcName + " Parent Directory", "UTF-8"));
-                json = IOUtils.toString(url.openStream());
-                System.out.println(json);
-                JSONObject jsonObject = JSONObject.fromObject(json);
-                if (jsonObject.getInt("responseStatus") == 200) {
-                    JSONObject responseData = jsonObject.getJSONObject("responseData");
-                    JSONArray array = responseData.getJSONArray("results");
-                    for (int i = 0; i < array.size(); i ++) {
-                        JSONObject obj = array.getJSONObject(i);
-                        URL srcUrl = new URL(new URL(obj.getString("url")), srcName);
-                        try {
-                            File file = new File(System.getProperty("user.home") + File.separatorChar
-                                    + ".sourceattacher"+ File.separatorChar + srcName);
-                            if (!file.exists()) {
-                                byte[] data = IOUtils.toByteArray(srcUrl.openStream());
-                                FileUtils.writeByteArrayToFile(file, data);
-                            }
-                            result = file;
-                            break;
-                        } catch (Exception e) {
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-        return result;
+
+        // Not found on the web, use name of binFile
+        if (name == null) {
+            name = binFile.getName();
+        }
+
+        return name;
     }
 
     public static void main(String[] args) throws Exception {
