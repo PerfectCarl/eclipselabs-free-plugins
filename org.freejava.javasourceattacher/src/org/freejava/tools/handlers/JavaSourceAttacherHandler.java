@@ -45,6 +45,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.html.HTMLCollection;
 import org.w3c.dom.html.HTMLDocument;
+import org.xml.sax.SAXException;
 
 /**
  * Handler class for View Class/Package Dependency action.
@@ -255,6 +256,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         File result = null;
 
         String srcName = name.substring(0, name.length() - ".jar".length()) + "-src.zip";
+        String srcName2 = name.substring(0, name.length() - ".jar".length()) + ".zip";
         File file = new File(System.getProperty("user.home") + File.separatorChar
                 + ".sourceattacher"+ File.separatorChar + srcName);
         if (file.exists()) {
@@ -264,6 +266,12 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     + "q=" + URLEncoder.encode(srcName + " intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
             String json = IOUtils.toString(url.openStream());
             System.out.println(json);
+            if (emptySearch(json)) {
+                url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
+                        + "q=" + URLEncoder.encode(srcName2 + " intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                json = IOUtils.toString(url.openStream());
+                System.out.println(json);
+            }
             JSONObject jsonObject = JSONObject.fromObject(json);
             if (jsonObject.getInt("responseStatus") == 200) {
                 JSONObject responseData = jsonObject.getJSONObject("responseData");
@@ -322,7 +330,18 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return result;
     }
 
-    private static String findRealName(File binFile) throws IOException {
+    private static boolean emptySearch(String json) {
+        boolean result = true;
+        JSONObject jsonObject = JSONObject.fromObject(json);
+        if (jsonObject.getInt("responseStatus") == 200) {
+            JSONObject responseData = jsonObject.getJSONObject("responseData");
+            JSONArray array = responseData.getJSONArray("results");
+            result =  array.size() == 0;
+        }
+        return result;
+    }
+
+    private static String findRealName(File binFile) throws Exception {
         String name = null;
 
         // If the file name doesn't have version number, we need to google for a better name
@@ -350,6 +369,34 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             for (Map.Entry<String, Integer> entry : counter.entrySet()) {
                 if (entry.getValue().compareTo(max) > 0) {
                     name = entry.getKey();
+                }
+            }
+
+            if (name == null) {
+                URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + md5);
+                URLConnection con = url2.openConnection();
+                con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; "
+                        + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
+                String html = IOUtils.toString(con.getInputStream());
+                counter = new HashMap<String, Integer>();
+                patternStr = "/([a-zA-Z\\.\\-\\_0-9]+)\\.md5";
+                pattern = Pattern.compile(patternStr);
+                matcher = pattern.matcher(html);
+                while (matcher.find()) {
+                    String nm = matcher.group(1);
+                    Integer count;
+                    if (counter.containsKey(nm)) {
+                        count = new Integer(1 + counter.get(nm).intValue());
+                    } else {
+                        count = new Integer(1);
+                    }
+                    counter.put(nm, count);
+                }
+                max = new Integer(0);
+                for (Map.Entry<String, Integer> entry : counter.entrySet()) {
+                    if (entry.getValue().compareTo(max) > 0) {
+                        name = entry.getKey();
+                    }
                 }
             }
         }
