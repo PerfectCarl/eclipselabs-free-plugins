@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -29,6 +30,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.html.HTMLCollection;
 import org.w3c.dom.html.HTMLDocument;
+import org.xml.sax.InputSource;
 
 public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
@@ -134,33 +136,42 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
     private static List<String> searchLinksInPages(List<String> folderLinks) throws Exception {
         List<String> links = new ArrayList<String>();
         for (String url : folderLinks) {
-            DOMParser parser = new DOMParser();
-            parser.parse(url);
-            HTMLDocument document = (HTMLDocument) parser.getDocument();
-            HTMLCollection pagelinks = document.getLinks();
-            for (int ii = 0; ii < pagelinks.getLength(); ii++) {
-                Node link = pagelinks.item(ii);
-                NamedNodeMap attrs = link.getAttributes();
-                String href = null;
-                for (int j = 0; j < attrs.getLength(); j++) {
-                    if ("href".equalsIgnoreCase(attrs.item(j).getNodeName())) {
-                        href = attrs.item(j).getNodeValue();
-                    }
-                }
-                if (!href.startsWith("javascript:") && !href.startsWith("news:")) {
-                    String absHref = new URL(new URL(url), href).toString();
-                    int lastSep = absHref.lastIndexOf('/');
-                    int lastSharp = absHref.lastIndexOf('#');
-                    if (lastSep >= 0 && lastSharp >= 0 && lastSharp > lastSep) {
-                        absHref = absHref.substring(0, lastSharp);
-                    }
-                    links.add(absHref);
-                }
-            }
+            URL url2 = new URL(url);
+            URLConnection con = url2.openConnection();
+            con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
+            String html = IOUtils.toString(con.getInputStream());
+            links.addAll(searchLinksInPage(url, html));
         }
         return links;
     }
+    private static List<String> searchLinksInPage(String url, String page) throws Exception {
+        List<String> links = new ArrayList<String>();
+        DOMParser parser = new DOMParser();
+        parser.parse(new InputSource(new StringReader(page)));
+        HTMLDocument document = (HTMLDocument) parser.getDocument();
+        HTMLCollection pagelinks = document.getLinks();
+        for (int ii = 0; ii < pagelinks.getLength(); ii++) {
+            Node link = pagelinks.item(ii);
+            NamedNodeMap attrs = link.getAttributes();
+            String href = null;
+            for (int j = 0; j < attrs.getLength(); j++) {
+                if ("href".equalsIgnoreCase(attrs.item(j).getNodeName())) {
+                    href = attrs.item(j).getNodeValue();
+                }
+            }
+            if (!href.startsWith("javascript:") && !href.startsWith("news:")) {
+                String absHref = new URL(new URL(url), href).toString();
+                int lastSep = absHref.lastIndexOf('/');
+                int lastSharp = absHref.lastIndexOf('#');
+                if (lastSep >= 0 && lastSharp >= 0 && lastSharp > lastSep) {
+                    absHref = absHref.substring(0, lastSharp);
+                }
+                links.add(absHref);
+            }
+        }
 
+        return links;
+    }
     private static List<String> searchFolderLinks(List<NameVersion> nvs) throws Exception {
         List<String> result = new ArrayList<String>();
         for (NameVersion ns : nvs) {
@@ -174,6 +185,16 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                         + "q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
                 json = IOUtils.toString(url.openStream());
                 links = getLinks(json);
+                if (links.isEmpty()) {
+                    URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                    URLConnection con = url2.openConnection();
+                    con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
+                    String html = IOUtils.toString(con.getInputStream());
+                    links = searchLinksInPage(url2.toString(), html);
+                    for (Iterator<String> it = links.iterator(); it.hasNext();) {
+                        if (!it.next().endsWith("/")) it.remove();
+                    }
+                }
             }
             result.addAll(links);
         }
