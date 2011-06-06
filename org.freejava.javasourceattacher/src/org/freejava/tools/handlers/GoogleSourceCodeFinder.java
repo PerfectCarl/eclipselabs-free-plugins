@@ -81,7 +81,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
     private static NameVersion parseNameVersion(String name) {
         NameVersion ns = null;
-        Matcher m = Pattern.compile("([a-zA-Z\\-_]+)[\\-_]([0-9\\.]+)").matcher(name);
+        Matcher m = Pattern.compile("([a-zA-Z\\-_]+)[\\-_]([0-9]+[0-9\\.]*[0-9]+)").matcher(name);
         if (m.find()) {
             ns = new NameVersion();
             ns.setName(m.group(1));
@@ -194,7 +194,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                 String md5FileName = link.substring(link.lastIndexOf('/')+1);
                 md5FileName = FilenameUtils.getBaseName(md5FileName);
                 NameVersion nv = parseNameVersion(md5FileName);
-                if (nv != null && result.contains(nv)) {
+                if (nv != null && !result.contains(nv)) {
                     result.add(nv);
                 }
             } else {
@@ -206,7 +206,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                     String nm = matcher.group();
                     if (nm.contains(name)) {
                         NameVersion nv = parseNameVersion(nm);
-                        if (nv != null && result.contains(nv)) {
+                        if (nv != null && !result.contains(nv)) {
                             result.add(nv);
                         }
                     }
@@ -225,7 +225,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
             String nm = matcher.group();
             if (nm.contains(name)) {
                 NameVersion nv = parseNameVersion(nm);
-                if (nv != null && result.contains(nv)) {
+                if (nv != null && !result.contains(nv)) {
                     result.add(nv);
                 }
             }
