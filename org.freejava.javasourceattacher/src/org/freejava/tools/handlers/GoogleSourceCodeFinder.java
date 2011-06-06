@@ -24,7 +24,6 @@ import org.w3c.dom.html.HTMLDocument;
 
 public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
-    @Override
     public File find(File bin) throws Exception {
         File result;
         String name = findRealName(bin);
