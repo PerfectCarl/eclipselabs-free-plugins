@@ -18,12 +18,6 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
 
-/**
- * Handler class for View Class/Package Dependency action.
- *
- * @see org.eclipse.core.commands.IHandler
- * @see org.eclipse.core.commands.AbstractHandler
- */
 public class JavaSourceAttacherHandler extends AbstractHandler {
     /**
      * The constructor.
@@ -44,7 +38,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         // * <li><code>org.eclipse.jdt.core.IPackageFragmentRoot</code></li>
         // * <li><code>org.eclipse.jdt.core.IJavaProject</code></li>
         IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-        List<IPackageFragmentRoot> selections = new ArrayList<IPackageFragmentRoot>();
+        final List<IPackageFragmentRoot> selections = new ArrayList<IPackageFragmentRoot>();
         for (Iterator<?> iterator = structuredSelection.iterator(); iterator.hasNext();) {
             IJavaElement aSelection = (IJavaElement) iterator.next();
             if (aSelection instanceof IPackageFragmentRoot) {
@@ -62,14 +56,17 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             }
         }
         updateSourceAttachments(selections);
-
         return null;
     }
 
     private void updateSourceAttachments(List<IPackageFragmentRoot> roots) {
         for (IPackageFragmentRoot pkgRoot : roots) {
             try {
-                if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY && pkgRoot.getSourceAttachmentPath() == null && pkgRoot.isArchive()) {
+                if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY
+                        && pkgRoot.getSourceAttachmentPath() == null
+                        && pkgRoot.isArchive()
+                        && (pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_LIBRARY
+                                || pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_VARIABLE)) {
                     File file;
                     if (!pkgRoot.isExternal()) {
                         file = pkgRoot.getResource().getLocation().toFile();
