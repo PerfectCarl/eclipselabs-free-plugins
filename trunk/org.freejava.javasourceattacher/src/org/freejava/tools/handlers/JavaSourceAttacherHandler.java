@@ -14,7 +14,6 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -95,48 +94,51 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                 e.printStackTrace();
             }
         }
-
-
     }
-    protected static void attachSource(IPackageFragmentRoot root, String sourcePath, String sourceRoot) throws JavaModelException {
+
+    private static void attachSource(IPackageFragmentRoot root, String sourcePath, String sourceRoot) throws Exception {
         IJavaProject javaProject = root.getJavaProject();
         IClasspathEntry[] entries = (IClasspathEntry[])javaProject.getRawClasspath().clone();
-        boolean found = false;
         for (int i = 0; i < entries.length; i++){
-                IClasspathEntry entry = entries[i];
-                String entryPath = entry.getPath().toOSString();
-                String rootPath = root.getPath().toOSString();
-                if (entryPath.equals(rootPath)) {
-                        entries[i] = JavaCore.newLibraryEntry(
-                                root.getPath(),
-                                sourcePath == null ? null : new Path(sourcePath),
-                                sourceRoot == null ? null : new Path(sourceRoot),
-                                false);
-                        found = true;
-                        break;
-                }
-        }
-        if (!found) {
-            // try to use file name only
-            for (int i = 0; i < entries.length; i++){
-                IClasspathEntry entry = entries[i];
-                String entryPath = entry.getPath().toOSString();
-                String entryName = entryPath.substring(Math.max(entryPath.lastIndexOf('/'), entryPath.lastIndexOf('\\')) + 1);
-                String rootPath = root.getPath().toOSString();
-                String rootName = rootPath.substring(Math.max(rootPath.lastIndexOf('/'), rootPath.lastIndexOf('\\')) + 1);
-                if (entryName.equals(rootName)) {
-                    // Problem: lost classpath variable here!!!
-                    entries[i] = JavaCore.newLibraryEntry(
-                            root.getPath(),
-                            sourcePath == null ? null : new Path(sourcePath),
-                            sourceRoot == null ? null : new Path(sourceRoot),
-                            false);
-                    found = true;
-                    break;
-                }
+            IClasspathEntry entry = entries[i];
+            String entryPath;
+            if (entry.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
+                entryPath = JavaCore.getResolvedVariablePath(entry.getPath()).toOSString();
+            } else {
+                entryPath = entry.getPath().toOSString();
+            }
+            String rootPath = root.getPath().toOSString();
+            if (entryPath.equals(rootPath)) {
+                entries[i] = addSourceAttachment(root, entries[i], sourcePath, sourceRoot);
+                break;
             }
         }
         javaProject.setRawClasspath(entries, null);
+    }
+
+    private static IClasspathEntry addSourceAttachment(IPackageFragmentRoot root, IClasspathEntry entry,
+            String sourcePath, String sourceRoot) throws Exception {
+        IClasspathEntry result;
+        int entryKind = entry.getEntryKind();
+        // CPE_PROJECT, CPE_LIBRARY, CPE_SOURCE, CPE_VARIABLE or CPE_CONTAINER
+        switch (entryKind) {
+            case IClasspathEntry.CPE_LIBRARY:
+                result = JavaCore.newLibraryEntry(
+                        entry.getPath(),
+                        sourcePath == null ? null : new Path(sourcePath),
+                        sourceRoot == null ? null : new Path(sourceRoot),
+                        false);
+                break;
+            case IClasspathEntry.CPE_VARIABLE:
+                File file = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
+                JavaCore.setClasspathVariable("SOURCE_ATTACHER", new Path(file.getAbsolutePath()), null);
+                Path varAttPath = new Path("SOURCE_ATTACHER/" + new File(sourcePath).getName());
+                result = JavaCore.newVariableEntry(entry.getPath(), varAttPath, sourceRoot == null ? null : new Path(sourceRoot));
+                break;
+            default:
+                result = entry;
+        }
+        return result;
     }
 
     public static void main(String[] args) throws Exception {
