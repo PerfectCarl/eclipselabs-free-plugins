@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,6 +78,19 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         List<NameVersion> nvs2 = findNameVersions(md5, name);
         nvs.addAll(nvs2);
 
+        try {
+            Properties p = new Properties();
+            p.load(new URL("http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/org.freejava.javasourceattacher/md5mapping.properties").openStream());
+            String altmd5 = p.getProperty(md5);
+            if (altmd5 != null) {
+                System.out.println("Alternative MD5:" + altmd5);
+                List<NameVersion> nvs3 = findNameVersions(altmd5, name);
+                nvs.addAll(nvs3);
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+
         for (NameVersion ver : nvs) {
             System.out.println("Name:" + ver.getName() + "; version: " + ver.getVersion());
         }
@@ -92,6 +106,13 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
             ns = new NameVersion();
             ns.setName(m.group(1));
             ns.setVersion(m.group(2));
+        } else {
+            m = Pattern.compile("([a-zA-Z\\-_]+)[\\-_\\.]([0-9]+[0-9\\.]*[0-9]+)").matcher(name);
+            if (m.find()) {
+                ns = new NameVersion();
+                ns.setName(m.group(1));
+                ns.setVersion(m.group(2));
+            }
         }
         return ns;
     }
@@ -103,11 +124,14 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         List<String> links = searchLinksInPages(folderLinks);
         for (Iterator<String> it = links.iterator(); it.hasNext();) {
             String link = it.next();
+            boolean keep = false;
             for (NameVersion nv : nvs) {
                 if (link.contains(nv.getName()) && link.contains(nv.getVersion()) && link.endsWith(".zip")) {
-                } else {
-                    it.remove();
+                    keep = true;
                 }
+            }
+            if (!keep) {
+                it.remove();
             }
         }
 
@@ -246,10 +270,21 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + md5);
         System.out.println(url2.toString());
-
         URLConnection con = url2.openConnection();
         con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
         String html = IOUtils.toString(con.getInputStream());
+        links =  searchLinksInPage(url2.toString(), html);
+        for (String link : links) {
+            if (link.endsWith(".md5")) {
+                String md5FileName = link.substring(link.lastIndexOf('/')+1);
+                md5FileName = FilenameUtils.getBaseName(md5FileName);
+                NameVersion nv = parseNameVersion(md5FileName);
+                if (nv != null && !result.contains(nv)) {
+                    result.add(nv);
+                }
+            }
+        }
+
         String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
         Pattern pattern = Pattern.compile(patternStr);
         Matcher matcher = pattern.matcher(html);
