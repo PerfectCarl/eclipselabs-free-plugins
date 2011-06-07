@@ -127,13 +127,15 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                         entry.getPath(),
                         sourcePath == null ? null : new Path(sourcePath),
                         sourceRoot == null ? null : new Path(sourceRoot),
-                        false);
+                        entry.getAccessRules(), entry.getExtraAttributes(), entry.isExported());
                 break;
             case IClasspathEntry.CPE_VARIABLE:
                 File file = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
                 JavaCore.setClasspathVariable("SOURCE_ATTACHER", new Path(file.getAbsolutePath()), null);
                 Path varAttPath = new Path("SOURCE_ATTACHER/" + new File(sourcePath).getName());
-                result = JavaCore.newVariableEntry(entry.getPath(), varAttPath, sourceRoot == null ? null : new Path(sourceRoot));
+                result = JavaCore.newVariableEntry(entry.getPath(), varAttPath,
+                        sourceRoot == null ? null : new Path(sourceRoot), entry.getAccessRules(),
+                                entry.getExtraAttributes(), entry.isExported());
                 break;
             default:
                 result = entry;
