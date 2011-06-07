@@ -77,6 +77,10 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         List<NameVersion> nvs2 = findNameVersions(md5, name);
         nvs.addAll(nvs2);
 
+        for (NameVersion ver : nvs) {
+            System.out.println("Name:" + ver.getName() + "; version: " + ver.getVersion());
+        }
+
         result = downloadSourceFile(nvs);
         return result;
     }
@@ -177,16 +181,20 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         for (NameVersion ns : nvs) {
             URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
                     + "q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + "-src.zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+            System.out.println(url.toString());
             String json = IOUtils.toString(url.openStream());
             System.out.println(json);
             List<String> links = getLinks(json);
             if (links.isEmpty()) {
                 url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
                         + "q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                System.out.println(url.toString());
                 json = IOUtils.toString(url.openStream());
+                System.out.println(json);
                 links = getLinks(json);
                 if (links.isEmpty()) {
                     URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                    System.out.println(url2.toString());
                     URLConnection con = url2.openConnection();
                     con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
                     String html = IOUtils.toString(con.getInputStream());
@@ -207,6 +215,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         // Guess real file name ([name]-[version].jar)
         URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&" + "q=" + md5);
+        System.out.println(url.toString());
         String json = IOUtils.toString(url.openStream());
         System.out.println(json);
         List<String> links = getLinks(json);
@@ -236,6 +245,8 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         }
 
         URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + md5);
+        System.out.println(url2.toString());
+
         URLConnection con = url2.openConnection();
         con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
         String html = IOUtils.toString(con.getInputStream());
