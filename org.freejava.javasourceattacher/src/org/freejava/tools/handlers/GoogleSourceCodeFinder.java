@@ -9,11 +9,14 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,8 +27,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.cyberneko.html.parsers.DOMParser;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -35,36 +36,13 @@ import org.xml.sax.InputSource;
 
 public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
-    private static class NameVersion {
-        private String name;
-        private String version;
-        public String getName() {
-            return name;
-        }
-        public void setName(String name) {
-            this.name = name;
-        }
-        public String getVersion() {
-            return version;
-        }
-        public void setVersion(String version) {
-            this.version = version;
-        }
-        public boolean equals(Object obj) {
-            return EqualsBuilder.reflectionEquals(this, obj);
-        }
-        public int hashCode() {
-            return HashCodeBuilder.reflectionHashCode(this);
-        }
-    }
-
     public File find(File bin) throws Exception {
         File result;
 
-        List<NameVersion> nvs = new ArrayList<NameVersion>();
-        NameVersion nv = parseNameVersion(FilenameUtils.getBaseName(bin.getName()));
-        if (nv != null) nvs.add(nv);
-        String name = nv != null ? nv.getName() : FilenameUtils.getBaseName(bin.getName());
+        String productName = parseProductName(FilenameUtils.getBaseName(bin.getName()));
+
+        Set<String> fileNames = new HashSet<String>();
+        fileNames.add(bin.getName());
 
         InputStream is = FileUtils.openInputStream(bin);
         String md5;
@@ -75,8 +53,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         }
         System.out.println("MD5:" + md5);
 
-        List<NameVersion> nvs2 = findNameVersions(md5, name);
-        nvs.addAll(nvs2);
+        fileNames.addAll(findFileNames(md5, productName));
 
         try {
             Properties p = new Properties();
@@ -84,49 +61,47 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
             String altmd5 = p.getProperty(md5);
             if (altmd5 != null) {
                 System.out.println("Alternative MD5:" + altmd5);
-                List<NameVersion> nvs3 = findNameVersions(altmd5, name);
-                nvs.addAll(nvs3);
+                List<String> nvs3 = findFileNames(altmd5, productName);
+                fileNames.addAll(nvs3);
             }
         } catch (Exception e) {
             // ignore
         }
 
-        for (NameVersion ver : nvs) {
-            System.out.println("Name:" + ver.getName() + "; version: " + ver.getVersion());
+        for (String fileName : fileNames) {
+            System.out.println("Name:" + fileName);
         }
 
-        result = downloadSourceFile(nvs);
+        result = downloadSourceFile(fileNames);
         return result;
     }
 
-    private static NameVersion parseNameVersion(String name) {
-        NameVersion ns = null;
+    private static String parseProductName(String name) {
+        String ns = null;
         Matcher m = Pattern.compile("([a-zA-Z\\-_]+)[\\-_]([0-9]+[0-9\\.]*[0-9]+)").matcher(name);
         if (m.find()) {
-            ns = new NameVersion();
-            ns.setName(m.group(1));
-            ns.setVersion(m.group(2));
+            ns = m.group(1);
         } else {
             m = Pattern.compile("([a-zA-Z\\-_]+)[\\-_\\.]([0-9]+[0-9\\.]*[0-9]+)").matcher(name);
             if (m.find()) {
-                ns = new NameVersion();
-                ns.setName(m.group(1));
-                ns.setVersion(m.group(2));
+                ns = m.group(1);
+            } else {
+                ns = name;
             }
         }
         return ns;
     }
 
-    private static File downloadSourceFile(List<NameVersion> nvs) throws Exception {
+    private static File downloadSourceFile(Collection<String> fileNames) throws Exception {
         File result = null;
 
-        List<String> folderLinks = searchFolderLinks(nvs);
+        List<String> folderLinks = searchFolderLinks(fileNames);
         List<String> links = searchLinksInPages(folderLinks);
         for (Iterator<String> it = links.iterator(); it.hasNext();) {
             String link = it.next();
             boolean keep = false;
-            for (NameVersion nv : nvs) {
-                if (link.contains(nv.getName()) && link.contains(nv.getVersion()) && link.endsWith(".zip")) {
+            for (String fileName : fileNames) {
+                if (link.contains(FilenameUtils.getBaseName(fileName)) && link.endsWith(".zip")) {
                     keep = true;
                 }
             }
@@ -172,10 +147,10 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         }
         return links;
     }
-    private static List<String> searchLinksInPage(String url, String page) throws Exception {
+    private static List<String> searchLinksInPage(String url, String html) throws Exception {
         List<String> links = new ArrayList<String>();
         DOMParser parser = new DOMParser();
-        parser.parse(new InputSource(new StringReader(page)));
+        parser.parse(new InputSource(new StringReader(html)));
         HTMLDocument document = (HTMLDocument) parser.getDocument();
         HTMLCollection pagelinks = document.getLinks();
         for (int ii = 0; ii < pagelinks.getLength(); ii++) {
@@ -200,24 +175,25 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         return links;
     }
-    private static List<String> searchFolderLinks(List<NameVersion> nvs) throws Exception {
+    private static List<String> searchFolderLinks(Collection<String> fileNames) throws Exception {
         List<String> result = new ArrayList<String>();
-        for (NameVersion ns : nvs) {
+        for (String fileName : fileNames) {
+            String base = FilenameUtils.getBaseName(fileName);
             URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                    + "q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + "-src.zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                    + "q=" + URLEncoder.encode(base + "-src.zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
             System.out.println(url.toString());
             String json = IOUtils.toString(url.openStream());
             System.out.println(json);
             List<String> links = getLinks(json);
             if (links.isEmpty()) {
                 url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                        + "q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                        + "q=" + URLEncoder.encode(base + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
                 System.out.println(url.toString());
                 json = IOUtils.toString(url.openStream());
                 System.out.println(json);
                 links = getLinks(json);
                 if (links.isEmpty()) {
-                    URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(ns.getName() + "-" + ns.getVersion() + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+                    URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(base + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
                     System.out.println(url2.toString());
                     URLConnection con = url2.openConnection();
                     con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
@@ -234,8 +210,8 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
-    private static List<NameVersion> findNameVersions(String md5, String name) throws Exception {
-        List<NameVersion> result = new ArrayList<NameVersion>();
+    private static List<String> findFileNames(String md5, String productName) throws Exception {
+        List<String> result = new ArrayList<String>();
 
         // Guess real file name ([name]-[version].jar)
         URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&" + "q=" + md5);
@@ -246,11 +222,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         for (String link : links) {
             if (link.endsWith(".md5")) {
                 String md5FileName = link.substring(link.lastIndexOf('/')+1);
-                md5FileName = FilenameUtils.getBaseName(md5FileName);
-                NameVersion nv = parseNameVersion(md5FileName);
-                if (nv != null && !result.contains(nv)) {
-                    result.add(nv);
-                }
+                result.add(md5FileName.substring(0, md5FileName.length() - ".md5".length()));
             } else {
                 String text = IOUtils.toString(new URL(link).openStream());
                 String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
@@ -258,11 +230,8 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                 Matcher matcher = pattern.matcher(text);
                 while (matcher.find()) {
                     String nm = matcher.group();
-                    if (nm.contains(name)) {
-                        NameVersion nv = parseNameVersion(nm);
-                        if (nv != null && !result.contains(nv)) {
-                            result.add(nv);
-                        }
+                    if (nm.contains(productName)) {
+                        result.add(nm);
                     }
                 }
             }
@@ -277,11 +246,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         for (String link : links) {
             if (link.endsWith(".md5")) {
                 String md5FileName = link.substring(link.lastIndexOf('/')+1);
-                md5FileName = FilenameUtils.getBaseName(md5FileName);
-                NameVersion nv = parseNameVersion(md5FileName);
-                if (nv != null && !result.contains(nv)) {
-                    result.add(nv);
-                }
+                result.add(md5FileName.substring(0, md5FileName.length() - ".md5".length()));
             }
         }
 
@@ -290,11 +255,8 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         Matcher matcher = pattern.matcher(html);
         while (matcher.find()) {
             String nm = matcher.group();
-            if (nm.contains(name)) {
-                NameVersion nv = parseNameVersion(nm);
-                if (nv != null && !result.contains(nv)) {
-                    result.add(nv);
-                }
+            if (nm.contains(productName)) {
+                result.add(nm);
             }
         }
         return result;

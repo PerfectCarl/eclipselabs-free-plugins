@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry exported="true" kind="lib" path="lib/xercesImpl.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/nekohtml.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/xercesImpl.jar" sourcepath="C:/Documents and Settings/Thai Ha/.sourceattacher/Xerces-J-src.2.9.1.zip"/>
+	<classpathentry kind="lib" path="lib/nekohtml.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.5.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-codec/commons-codec/sources/commons-codec-1.5-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-beanutils-1.8.3.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-beanutils/commons-beanutils/sources/commons-beanutils-1.8.3-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections-3.2.1.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-collections/commons-collections/sources/commons-collections-3.2.1-sources.jar"/>
