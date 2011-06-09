@@ -56,9 +56,10 @@ public class MavenRepoSourceCodeFinder implements SourceCodeFinder {
     private static File download(URL url) throws Exception {
         String urlStr = url.toURI().toString();
         String fileName = urlStr.substring(urlStr.lastIndexOf('/')+ 1);
-        File file = new File(System.getProperty("user.home") + File.separatorChar
-                + ".sourceattacher"+ File.separatorChar + fileName);
+        File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
+        File file = new File(cacheDir, fileName);
         if (!file.exists()) {
+            if (!cacheDir.exists()) cacheDir.mkdirs();
             OutputStream os = new FileOutputStream(file);
             try {
                 IOUtils.copy(url.openStream(), os);

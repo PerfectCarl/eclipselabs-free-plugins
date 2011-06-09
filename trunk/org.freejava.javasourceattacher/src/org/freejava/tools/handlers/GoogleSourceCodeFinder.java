@@ -2,16 +2,19 @@ package org.freejava.tools.handlers;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.net.URLStreamHandler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +22,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -28,6 +34,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.cyberneko.html.parsers.DOMParser;
+import org.silvertunnel.netlib.adapter.url.NetlibURLStreamHandlerFactory;
+import org.silvertunnel.netlib.api.NetFactory;
+import org.silvertunnel.netlib.api.NetLayer;
+import org.silvertunnel.netlib.api.NetLayerIDs;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.html.HTMLCollection;
@@ -72,7 +82,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
             System.out.println("Name:" + fileName);
         }
 
-        result = downloadSourceFile(fileNames);
+        result = downloadSourceFile(fileNames, bin);
         return result;
     }
 
@@ -92,7 +102,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         return ns;
     }
 
-    private static File downloadSourceFile(Collection<String> fileNames) throws Exception {
+    private static File downloadSourceFile(Collection<String> fileNames, File bin) throws Exception {
         File result = null;
 
         List<String> folderLinks = searchFolderLinks(fileNames);
@@ -112,16 +122,31 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         Collections.sort(links, new Comparator<String>() {
             public int compare(String o1, String o2) {
-                return (o1.contains("-src") ? 0 : 1) - (o2.contains("-src") ? 0 : 1);
+                int i1 = 0, i2 = 0;
+
+                if (o1.contains("-src")) i1 = 1;
+                if (o2.contains("-src")) i2 = 1;
+
+                String patternStr = "[0-9\\-\\.]+";
+                Pattern pattern = Pattern.compile(patternStr);
+                int verlength1 = 0, verlength2 = 0;
+                Matcher matcher = pattern.matcher(o1);
+                if (matcher.find()) verlength1 = matcher.group(0).length();
+                matcher = pattern.matcher(o2);
+                if (matcher.find()) verlength2 = matcher.group(0).length();
+                if (verlength1 > verlength2) i1++;
+                if (verlength2 > verlength1) i2++;
+
+                return (i2 - i1);
             }
         });
 
-        if (!links.isEmpty()) {
-            String url = links.get(0);
-            String srcName = url.substring(url.lastIndexOf('/')+1);
-            File file = new File(System.getProperty("user.home") + File.separatorChar
-                    + ".sourceattacher"+ File.separatorChar + srcName);
+        for (String url : links) {
+            String srcName = url.substring(url.lastIndexOf('/') + 1);
+            File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
+            File file = new File(cacheDir, srcName);
             if (!file.exists()) {
+                if (!cacheDir.exists()) cacheDir.mkdirs();
                 InputStream is = new URL(url).openStream();
                 OutputStream os = new FileOutputStream(file);
                 try {
@@ -131,8 +156,44 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                     IOUtils.closeQuietly(is);
                 }
             }
-            result = file;
+            if (isSourceCodeFor(file, bin)) {
+                result = file;
+                break;
+            } else {
+                file.delete();
+            }
         }
+        return result;
+    }
+
+    private static boolean isSourceCodeFor(File src, File bin) throws Exception {
+        boolean result = false;
+
+        List<String> binList = new ArrayList<String>();
+        ZipFile zf = new ZipFile(bin);
+        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+            binList.add(zipEntryName);
+        }
+
+        zf = new ZipFile(src);
+        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+            String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
+            String fileExt = FilenameUtils.getExtension(zipEntryName);
+            if ("java".equals(fileExt) && fileBaseName != null) {
+                for (String zipEntryName2 : binList) {
+                    String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
+                    String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
+                    if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
+                        result = true;
+                        return result;
+                    }
+                }
+            }
+            binList.add(zipEntryName);
+        }
+
         return result;
     }
 
@@ -140,13 +201,12 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         List<String> links = new ArrayList<String>();
         for (String url : folderLinks) {
             URL url2 = new URL(url);
-            URLConnection con = url2.openConnection();
-            con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
-            String html = IOUtils.toString(con.getInputStream());
+            String html = getString(url2);
             links.addAll(searchLinksInPage(url, html));
         }
         return links;
     }
+
     private static List<String> searchLinksInPage(String url, String html) throws Exception {
         List<String> links = new ArrayList<String>();
         DOMParser parser = new DOMParser();
@@ -182,22 +242,20 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
             URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
                     + "q=" + URLEncoder.encode(base + "-src.zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
             System.out.println(url.toString());
-            String json = IOUtils.toString(url.openStream());
+            String json = getString(url);
             System.out.println(json);
             List<String> links = getLinks(json);
             if (links.isEmpty()) {
                 url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
                         + "q=" + URLEncoder.encode(base + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
                 System.out.println(url.toString());
-                json = IOUtils.toString(url.openStream());
+                json = getString(url);
                 System.out.println(json);
                 links = getLinks(json);
                 if (links.isEmpty()) {
                     URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(base + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
                     System.out.println(url2.toString());
-                    URLConnection con = url2.openConnection();
-                    con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
-                    String html = IOUtils.toString(con.getInputStream());
+                    String html = getString(url2);
                     links = searchLinksInPage(url2.toString(), html);
                     for (Iterator<String> it = links.iterator(); it.hasNext();) {
                         if (!it.next().endsWith("/")) it.remove();
@@ -210,13 +268,54 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
+    private static String getString(URL url) throws Exception {
+        String result;
+        try {
+            System.out.println("Will access URL via normal network");
+            URLConnection con = url.openConnection();
+            con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
+            InputStream is = null;
+            try {
+                is = con.getInputStream();
+                result = IOUtils.toString(is);
+            } finally {
+                IOUtils.closeQuietly(is);
+            }
+        } catch (Exception e) {
+            try {
+                System.out.println("Will access URL via TOR network");
+                // try with Tor network
+                NetLayer lowerNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TOR);
+                lowerNetLayer.waitUntilReady();
+                NetlibURLStreamHandlerFactory factory = new NetlibURLStreamHandlerFactory(false);
+                factory.setNetLayerForHttpHttpsFtp(lowerNetLayer);
+                URLStreamHandler handler = factory.createURLStreamHandler(url.getProtocol());
+                URL context = null;
+                URL url2 = new URL(context, url.toExternalForm(), handler);
+                URLConnection con = url2.openConnection();
+                InputStream is = null;
+                try {
+                    is = con.getInputStream();
+                    result = IOUtils.toString(is);
+                } finally {
+                    IOUtils.closeQuietly(is);
+                }
+
+            } catch (Exception e2) {
+                e2.printStackTrace();
+                throw e;
+            }
+        }
+        return result;
+    }
+
     private static List<String> findFileNames(String md5, String productName) throws Exception {
         List<String> result = new ArrayList<String>();
 
         // Guess real file name ([name]-[version].jar)
         URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&" + "q=" + md5);
         System.out.println(url.toString());
-        String json = IOUtils.toString(url.openStream());
+        String json = getString(url);
         System.out.println(json);
         List<String> links = getLinks(json);
         for (String link : links) {
@@ -224,7 +323,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                 String md5FileName = link.substring(link.lastIndexOf('/')+1);
                 result.add(md5FileName.substring(0, md5FileName.length() - ".md5".length()));
             } else {
-                String text = IOUtils.toString(new URL(link).openStream());
+                String text = getString(new URL(link));
                 String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
                 Pattern pattern = Pattern.compile(patternStr);
                 Matcher matcher = pattern.matcher(text);
@@ -239,9 +338,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + md5);
         System.out.println(url2.toString());
-        URLConnection con = url2.openConnection();
-        con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
-        String html = IOUtils.toString(con.getInputStream());
+        String html = getString(url2);
         links =  searchLinksInPage(url2.toString(), html);
         for (String link : links) {
             if (link.endsWith(".md5")) {
