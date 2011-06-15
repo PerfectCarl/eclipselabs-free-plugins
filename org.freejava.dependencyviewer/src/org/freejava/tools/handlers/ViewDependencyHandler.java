@@ -3,14 +3,14 @@ package org.freejava.tools.handlers;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -69,84 +69,18 @@ public class ViewDependencyHandler extends AbstractHandler {
 //	 * <li><code>org.eclipse.jdt.core.IPackageFragment</code></li>
 //	 * <li><code>org.eclipse.jdt.core.IPackageFragmentRoot</code></li>
 //	 * <li><code>org.eclipse.jdt.core.IJavaProject</code></li>
-        IStructuredSelection structuredSelection = (IStructuredSelection) selection;
-        List<IJavaElement> selections = new ArrayList<IJavaElement>();
-        for (Iterator<?> iterator = structuredSelection.iterator(); iterator.hasNext();) {
-            IJavaElement aSelection = (IJavaElement) iterator.next();
-            if (isViewPackageDependency(event)) {
-                if (aSelection instanceof ICompilationUnit) {
-                    // ignore
-                } else if (aSelection instanceof IPackageFragment) {
-                    selections.add(aSelection);
-                } else if (aSelection instanceof IPackageFragmentRoot) {
-                    IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
-                    try {
-                        for (IJavaElement e : pkgRoot.getChildren()) {
-                            selections.add(e);
-                        }
-                    } catch (JavaModelException e) {
-                        e.printStackTrace();
-                    }
-                } else if (aSelection instanceof IJavaProject) {
-                    IJavaProject p = (IJavaProject) aSelection;
-                    try {
-                        for (IJavaElement e : p.getPackageFragments()) {
-                            selections.add(e);
-                        }
-                    } catch (JavaModelException e) {
-                        e.printStackTrace();
-                    }
-                }
-            } else {
-                if (aSelection instanceof ICompilationUnit) {
-                    selections.add(aSelection);
-                } else if (aSelection instanceof IPackageFragment) {
-                    IPackageFragment pkg = (IPackageFragment) aSelection;
-                    try {
-                        for (IJavaElement e : pkg.getCompilationUnits()) {
-                            selections.add(e);
-                        }
-                    } catch (JavaModelException e) {
-                        e.printStackTrace();
-                    }
-                } else if (aSelection instanceof IPackageFragmentRoot) {
-                    IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
-                    try {
-                        for (IJavaElement e : pkgRoot.getChildren()) {
-                            IPackageFragment pkg = (IPackageFragment) e;
-                            for (IJavaElement e1 : pkg.getCompilationUnits()) {
-                                selections.add(e1);
-                            }
-                        }
-                    } catch (JavaModelException ex) {
-                        ex.printStackTrace();
-                    }
-                } else if (aSelection instanceof IJavaProject) {
-                    IJavaProject p = (IJavaProject) aSelection;
-                    try {
-                        for (IJavaElement e : p.getPackageFragments()) {
-                            IPackageFragment pkg = (IPackageFragment) e;
-                            try {
-                                for (IJavaElement e1 : pkg.getCompilationUnits()) {
-                                    selections.add(e1);
-                                }
-                            } catch (JavaModelException ex) {
-                                ex.printStackTrace();
-                            }
-                        }
-                    } catch (JavaModelException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
         try {
-            List<String> classFiles = getCorrespondingSources(selections);
+            boolean isViewPackageDependency = event.getCommand().getId().equals("org.freejava.tools.commands.viewPackageDependencyCommand");
+            IStructuredSelection structuredSelection = (IStructuredSelection) selection;
+            Set<String> names = new HashSet<String>();
+            Set<File> files = new HashSet<File>();
+            findFilterNamesAndJarClassFiles(isViewPackageDependency, structuredSelection, names, files);
+
             Collection<Node> graphNodes;
-            if (isViewPackageDependency(event)) {
-                graphNodes = getPackageDependency(classFiles, selections);
+            if (isViewPackageDependency) {
+                graphNodes = getPackageDependency(files, names);
             } else {
-                graphNodes = getClassDependency(classFiles);
+                graphNodes = getClassDependency(files, names);
             }
 
             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
@@ -177,66 +111,170 @@ public class ViewDependencyHandler extends AbstractHandler {
         return null;
     }
 
-    private boolean isViewPackageDependency(ExecutionEvent event) {
-        return event.getCommand().getId().equals("org.freejava.tools.commands.viewPackageDependencyCommand");
-    }
-
-    private static List<String> getCorrespondingSources(List<? extends IJavaElement> elements) throws JavaModelException{
-        List<String> result = new ArrayList<String>();
-        IRegion region = JavaCore.newRegion();
-        for(IJavaElement element : elements) {
-            if (element instanceof IPackageFragment && (((IPackageFragment)element).getKind() == IPackageFragmentRoot.K_BINARY)) {
-                IPackageFragment pkg = (IPackageFragment) element;
-                IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
-                File file;
-                if (!pkgRoot.isExternal()) {
-                    file = pkgRoot.getResource().getLocation().toFile();
-                } else {
-                    file = pkgRoot.getPath().toFile();
-                }
-                String jarFilePath = file.getAbsolutePath();
-                if (!result.contains(jarFilePath)) {
-                    result.add(jarFilePath);
-                }
-            } else if (element instanceof IPackageFragmentRoot && (((IPackageFragmentRoot)element).getKind() == IPackageFragmentRoot.K_BINARY)) {
-                IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) element;
-                File file;
-                if (!pkgRoot.isExternal()) {
-                    file = pkgRoot.getResource().getLocation().toFile();
-                } else {
-                    file = pkgRoot.getPath().toFile();
-                }
-                String jarFilePath = file.getAbsolutePath();
-                if (!result.contains(jarFilePath)) {
-                    result.add(jarFilePath);
+    private void findFilterNamesAndJarClassFiles(boolean isViewPackageDependency,
+            IStructuredSelection structuredSelection, Set<String> names,
+            Set<File> files) throws JavaModelException {
+        for (Iterator<?> iterator = structuredSelection.iterator(); iterator.hasNext();) {
+            IJavaElement aSelection = (IJavaElement) iterator.next();
+            if (isViewPackageDependency) {
+                if (aSelection instanceof ICompilationUnit) {
+                    // ignore
+                } else if (aSelection instanceof IPackageFragment) {
+                    names.add(aSelection.getElementName());
+                    if ((((IPackageFragment) aSelection).getKind() == IPackageFragmentRoot.K_BINARY)) {
+                        IPackageFragment pkg = (IPackageFragment) aSelection;
+                        IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
+                        File file;
+                        if (!pkgRoot.isExternal()) {
+                            file = pkgRoot.getResource().getLocation().toFile();
+                        } else {
+                            file = pkgRoot.getPath().toFile();
+                        }
+                        files.add(file);
+                    } else {
+                        IRegion region = JavaCore.newRegion();
+                        region.add(aSelection);
+                        IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                        for(IResource resource : resources){
+                            files.add(resource.getLocation().toFile());
+                        }
+                    }
+                } else if (aSelection instanceof IPackageFragmentRoot) {
+                    IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
+                    for (IJavaElement e : pkgRoot.getChildren()) {
+                        names.add(e.getElementName());
+                    }
+                    if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY) {
+                        File file;
+                        if (!pkgRoot.isExternal()) {
+                            file = pkgRoot.getResource().getLocation().toFile();
+                        } else {
+                            file = pkgRoot.getPath().toFile();
+                        }
+                        files.add(file);
+                    } else {
+                        IRegion region = JavaCore.newRegion();
+                        region.add(aSelection);
+                        IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                        for(IResource resource : resources){
+                            files.add(resource.getLocation().toFile());
+                        }
+                    }
+                } else if (aSelection instanceof IJavaProject) {
+                    IJavaProject p = (IJavaProject) aSelection;
+                    for (IPackageFragment pkg : p.getPackageFragments()) {
+                        names.add(pkg.getElementName());
+                    }
+                    for (IPackageFragmentRoot pkgRoot : p.getPackageFragmentRoots()) {
+                        if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY) {
+                            File file;
+                            if (!pkgRoot.isExternal()) {
+                                file = pkgRoot.getResource().getLocation().toFile();
+                            } else {
+                                file = pkgRoot.getPath().toFile();
+                            }
+                            files.add(file);
+                        } else {
+                            IRegion region = JavaCore.newRegion();
+                            region.add(aSelection);
+                            IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                            for(IResource resource : resources){
+                                files.add(resource.getLocation().toFile());
+                            }
+                        }
+                    }
                 }
             } else {
-                region.add(element);
+                if (aSelection instanceof ICompilationUnit) {
+                    names.add(aSelection.getElementName());
+                    IRegion region = JavaCore.newRegion();
+                    region.add(aSelection);
+                    IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                    for(IResource resource : resources){
+                        files.add(resource.getLocation().toFile());
+                    }
+                } else if (aSelection instanceof IPackageFragment) {
+                    IPackageFragment pkg = (IPackageFragment) aSelection;
+                    for (IJavaElement e : pkg.getChildren()) {
+                        names.add(e.getElementName());
+                    }
+                    if ((((IPackageFragment)aSelection).getKind() == IPackageFragmentRoot.K_BINARY)) {
+                        IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
+                        File file;
+                        if (!pkgRoot.isExternal()) {
+                            file = pkgRoot.getResource().getLocation().toFile();
+                        } else {
+                            file = pkgRoot.getPath().toFile();
+                        }
+                        files.add(file);
+                    } else {
+                        IRegion region = JavaCore.newRegion();
+                        region.add(aSelection);
+                        IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                        for(IResource resource : resources){
+                            files.add(resource.getLocation().toFile());
+                        }
+                    }
+                } else if (aSelection instanceof IPackageFragmentRoot) {
+                    IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
+                    for (IJavaElement e : pkgRoot.getChildren()) {
+                        IPackageFragment pkg = (IPackageFragment) e;
+                        for (IJavaElement e2 : pkg.getChildren()) {
+                            names.add(e2.getElementName());
+                        }
+                    }
+                    if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY) {
+                        File file;
+                        if (!pkgRoot.isExternal()) {
+                            file = pkgRoot.getResource().getLocation().toFile();
+                        } else {
+                            file = pkgRoot.getPath().toFile();
+                        }
+                        files.add(file);
+                    } else {
+                        IRegion region = JavaCore.newRegion();
+                        region.add(aSelection);
+                        IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                        for(IResource resource : resources){
+                            files.add(resource.getLocation().toFile());
+                        }
+                    }
+                } else if (aSelection instanceof IJavaProject) {
+                    IJavaProject p = (IJavaProject) aSelection;
+                    for (IPackageFragment pkg : p.getPackageFragments()) {
+                        for (IJavaElement e2 : pkg.getChildren()) {
+                            names.add(e2.getElementName());
+                        }
+                    }
+                    for (IPackageFragmentRoot pkgRoot : p.getPackageFragmentRoots()) {
+                        if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY) {
+                            File file;
+                            if (!pkgRoot.isExternal()) {
+                                file = pkgRoot.getResource().getLocation().toFile();
+                            } else {
+                                file = pkgRoot.getPath().toFile();
+                            }
+                            files.add(file);
+                        } else {
+                            IRegion region = JavaCore.newRegion();
+                            region.add(aSelection);
+                            IResource[] resources = JavaCore.getGeneratedResources(region, false);
+                            for(IResource resource : resources){
+                                files.add(resource.getLocation().toFile());
+                            }
+                        }
+                    }
+                }
             }
-
         }
-        IResource[] resources = JavaCore.getGeneratedResources(region, false);
-        for(IResource resource : resources){
-            result.add(resource.getLocation().toOSString());
-        }
-        return result;
     }
 
-//
-//	private MessageConsole findConsole(String name) {
-//		ConsolePlugin plugin = ConsolePlugin.getDefault();
-//		IConsoleManager conMan = plugin.getConsoleManager();
-//		IConsole[] existing = conMan.getConsoles();
-//		for (int i = 0; i < existing.length; i++)
-//			if (name.equals(existing[i].getName()))
-//				return (MessageConsole) existing[i];
-//		// no console found, so create a new one
-//		MessageConsole myConsole = new MessageConsole(name, null);
-//		conMan.addConsoles(new IConsole[] { myConsole });
-//		return myConsole;
-//	}
+    private Collection<Node> getPackageDependency(Collection<File> files, Collection<String> names) {
 
-    private Collection<Node> getPackageDependency(Collection<String> sources, List<IJavaElement> selectedPackages) {
+        Collection<String> sources = new HashSet<String>();
+        for (File file : files) {
+            sources.add(file.getAbsolutePath());
+        }
 
         NodeFactory factory = new NodeFactory();
         Visitor visitor = new CodeDependencyCollector(factory);
@@ -247,10 +285,6 @@ public class ViewDependencyHandler extends AbstractHandler {
         LinkMaximizer maximizer = new LinkMaximizer();
         maximizer.traverseNodes(factory.getPackages().values());
 
-        List<String> names = new ArrayList<String>();
-        for (IJavaElement element : selectedPackages) {
-            names.add(element.getElementName());
-        }
         CollectionSelectionCriteria scopeCriteria = new CollectionSelectionCriteria(names, null);
         scopeCriteria.setMatchingPackages(true);
         scopeCriteria.setMatchingClasses(false);
@@ -266,7 +300,12 @@ public class ViewDependencyHandler extends AbstractHandler {
         nodes.addAll(dependenciesQuery.getScopeFactory().getPackages().values());
         return nodes;
     }
-    private Collection<Node> getClassDependency(Collection<String> sources) {
+
+    private Collection<Node> getClassDependency(Collection<File> files, Collection<String> names) {
+        Collection<String> sources = new HashSet<String>();
+        for (File file : files) {
+            sources.add(file.getAbsolutePath());
+        }
 
         NodeFactory factory = new NodeFactory();
         Visitor visitor = new CodeDependencyCollector(factory);
@@ -277,13 +316,10 @@ public class ViewDependencyHandler extends AbstractHandler {
         LinkMaximizer maximizer = new LinkMaximizer();
         maximizer.traverseNodes(factory.getPackages().values());
 
-        List<String> names = new ArrayList<String>();
         for (Classfile cf : loader.getAllClassfiles()) {
             names.add(cf.getClassName());
         }
-//        for (IJavaElement element : selectedClasses) {
-//            names.add(element.getElementName());
-//        }
+
         CollectionSelectionCriteria scopeCriteria = new CollectionSelectionCriteria(names, null);
         scopeCriteria.setMatchingPackages(false);
         scopeCriteria.setMatchingClasses(true);
@@ -299,17 +335,4 @@ public class ViewDependencyHandler extends AbstractHandler {
         nodes.addAll(dependenciesQuery.getScopeFactory().getClasses().values());
         return nodes;
     }
-
-//	public static Collection<String> getAllClassFilesUnderDirectory(File dir) {
-//    	Collection<String> result = new ArrayList<String>();
-//        if (dir.isDirectory()) {
-//            String[] children = dir.list();
-//            for (int i=0; i<children.length; i++) {
-//            	result.addAll(getAllClassFilesUnderDirectory(new File(dir, children[i])));
-//            }
-//        } else {
-//            if (dir.getName().endsWith(".class")) result.add(dir.getAbsolutePath());
-//        }
-//        return result;
-//    }
 }
