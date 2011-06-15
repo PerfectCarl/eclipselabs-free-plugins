@@ -1,5 +1,6 @@
 package org.freejava.tools.handlers;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -9,6 +10,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -70,81 +72,81 @@ public class ViewDependencyHandler extends AbstractHandler {
         IStructuredSelection structuredSelection = (IStructuredSelection) selection;
         List<IJavaElement> selections = new ArrayList<IJavaElement>();
         for (Iterator<?> iterator = structuredSelection.iterator(); iterator.hasNext();) {
-        	IJavaElement aSelection = (IJavaElement) iterator.next();
+            IJavaElement aSelection = (IJavaElement) iterator.next();
             if (isViewPackageDependency(event)) {
-            	if (aSelection instanceof ICompilationUnit) {
-            		// ignore
-            	} else if (aSelection instanceof IPackageFragment) {
+                if (aSelection instanceof ICompilationUnit) {
+                    // ignore
+                } else if (aSelection instanceof IPackageFragment) {
                     selections.add(aSelection);
-            	} else if (aSelection instanceof IPackageFragmentRoot) {
-            		IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
-            		try {
-						for (IJavaElement e : pkgRoot.getChildren()) {
-							selections.add(e);
-						}
-					} catch (JavaModelException e) {
-						e.printStackTrace();
-					}
-            	} else if (aSelection instanceof IJavaProject) {
-            		IJavaProject p = (IJavaProject) aSelection;
-            		try {
-						for (IJavaElement e : p.getPackageFragments()) {
-							selections.add(e);
-						}
-					} catch (JavaModelException e) {
-						e.printStackTrace();
-					}
-            	}
+                } else if (aSelection instanceof IPackageFragmentRoot) {
+                    IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
+                    try {
+                        for (IJavaElement e : pkgRoot.getChildren()) {
+                            selections.add(e);
+                        }
+                    } catch (JavaModelException e) {
+                        e.printStackTrace();
+                    }
+                } else if (aSelection instanceof IJavaProject) {
+                    IJavaProject p = (IJavaProject) aSelection;
+                    try {
+                        for (IJavaElement e : p.getPackageFragments()) {
+                            selections.add(e);
+                        }
+                    } catch (JavaModelException e) {
+                        e.printStackTrace();
+                    }
+                }
             } else {
-            	if (aSelection instanceof ICompilationUnit) {
+                if (aSelection instanceof ICompilationUnit) {
                     selections.add(aSelection);
-            	} else if (aSelection instanceof IPackageFragment) {
-            		IPackageFragment pkg = (IPackageFragment) aSelection;
-            		try {
-						for (IJavaElement e : pkg.getCompilationUnits()) {
-							selections.add(e);
-						}
-					} catch (JavaModelException e) {
-						e.printStackTrace();
-					}
-            	} else if (aSelection instanceof IPackageFragmentRoot) {
-            		IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
-            		try {
-						for (IJavaElement e : pkgRoot.getChildren()) {
-							IPackageFragment pkg = (IPackageFragment) e;
-							for (IJavaElement e1 : pkg.getCompilationUnits()) {
-								selections.add(e1);
-							}
-						}
-					} catch (JavaModelException ex) {
-						ex.printStackTrace();
-					}
-            	} else if (aSelection instanceof IJavaProject) {
-            		IJavaProject p = (IJavaProject) aSelection;
-            		try {
-						for (IJavaElement e : p.getPackageFragments()) {
-		            		IPackageFragment pkg = (IPackageFragment) e;
-		            		try {
-								for (IJavaElement e1 : pkg.getCompilationUnits()) {
-									selections.add(e1);
-								}
-							} catch (JavaModelException ex) {
-								ex.printStackTrace();
-							}
-						}
-					} catch (JavaModelException e) {
-						e.printStackTrace();
-					}
-            	}
+                } else if (aSelection instanceof IPackageFragment) {
+                    IPackageFragment pkg = (IPackageFragment) aSelection;
+                    try {
+                        for (IJavaElement e : pkg.getCompilationUnits()) {
+                            selections.add(e);
+                        }
+                    } catch (JavaModelException e) {
+                        e.printStackTrace();
+                    }
+                } else if (aSelection instanceof IPackageFragmentRoot) {
+                    IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
+                    try {
+                        for (IJavaElement e : pkgRoot.getChildren()) {
+                            IPackageFragment pkg = (IPackageFragment) e;
+                            for (IJavaElement e1 : pkg.getCompilationUnits()) {
+                                selections.add(e1);
+                            }
+                        }
+                    } catch (JavaModelException ex) {
+                        ex.printStackTrace();
+                    }
+                } else if (aSelection instanceof IJavaProject) {
+                    IJavaProject p = (IJavaProject) aSelection;
+                    try {
+                        for (IJavaElement e : p.getPackageFragments()) {
+                            IPackageFragment pkg = (IPackageFragment) e;
+                            try {
+                                for (IJavaElement e1 : pkg.getCompilationUnits()) {
+                                    selections.add(e1);
+                                }
+                            } catch (JavaModelException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    } catch (JavaModelException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
         try {
             List<String> classFiles = getCorrespondingSources(selections);
             Collection<Node> graphNodes;
             if (isViewPackageDependency(event)) {
-            	graphNodes = getPackageDependency(classFiles, selections);
+                graphNodes = getPackageDependency(classFiles, selections);
             } else {
-            	graphNodes = getClassDependency(classFiles);
+                graphNodes = getClassDependency(classFiles);
             }
 
             IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
@@ -175,23 +177,43 @@ public class ViewDependencyHandler extends AbstractHandler {
         return null;
     }
 
-	private boolean isViewPackageDependency(ExecutionEvent event) {
-		return event.getCommand().getId().equals("org.freejava.tools.commands.viewPackageDependencyCommand");
-	}
+    private boolean isViewPackageDependency(ExecutionEvent event) {
+        return event.getCommand().getId().equals("org.freejava.tools.commands.viewPackageDependencyCommand");
+    }
 
-    private static List<String> getCorrespondingSources(List<? extends IJavaElement> elements){
+    private static List<String> getCorrespondingSources(List<? extends IJavaElement> elements) throws JavaModelException{
         List<String> result = new ArrayList<String>();
         IRegion region = JavaCore.newRegion();
         for(IJavaElement element : elements) {
-        	if (element.getClass().getSimpleName().equals("JarPackageFragment")) {
-        		IPackageFragment fragment = (IPackageFragment) element;
-        		String jarFilePath = fragment.getPath().toFile().getAbsolutePath();
-        		if (!result.contains(jarFilePath)) {
-        			result.add(jarFilePath);
-        		}
-        	} else {
-        		region.add(element);
-        	}
+            if (element instanceof IPackageFragment && (((IPackageFragment)element).getKind() == IPackageFragmentRoot.K_BINARY)) {
+                IPackageFragment pkg = (IPackageFragment) element;
+                IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
+                File file;
+                if (!pkgRoot.isExternal()) {
+                    file = pkgRoot.getResource().getLocation().toFile();
+                } else {
+                    file = pkgRoot.getPath().toFile();
+                }
+                String jarFilePath = file.getAbsolutePath();
+                if (!result.contains(jarFilePath)) {
+                    result.add(jarFilePath);
+                }
+            } else if (element instanceof IPackageFragmentRoot && (((IPackageFragmentRoot)element).getKind() == IPackageFragmentRoot.K_BINARY)) {
+                IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) element;
+                File file;
+                if (!pkgRoot.isExternal()) {
+                    file = pkgRoot.getResource().getLocation().toFile();
+                } else {
+                    file = pkgRoot.getPath().toFile();
+                }
+                String jarFilePath = file.getAbsolutePath();
+                if (!result.contains(jarFilePath)) {
+                    result.add(jarFilePath);
+                }
+            } else {
+                region.add(element);
+            }
+
         }
         IResource[] resources = JavaCore.getGeneratedResources(region, false);
         for(IResource resource : resources){
@@ -257,7 +279,7 @@ public class ViewDependencyHandler extends AbstractHandler {
 
         List<String> names = new ArrayList<String>();
         for (Classfile cf : loader.getAllClassfiles()) {
-        	names.add(cf.getClassName());
+            names.add(cf.getClassName());
         }
 //        for (IJavaElement element : selectedClasses) {
 //            names.add(element.getElementName());
