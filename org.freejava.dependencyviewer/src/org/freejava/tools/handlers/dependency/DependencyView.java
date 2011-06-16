@@ -19,8 +19,11 @@ import org.eclipse.zest.core.viewers.IGraphContentProvider;
 import org.eclipse.zest.core.widgets.ZestStyles;
 import org.eclipse.zest.layouts.LayoutStyles;
 import org.eclipse.zest.layouts.algorithms.SpringLayoutAlgorithm;
+import org.freejava.tools.Activator;
 
+import com.jeantessier.dependency.ClassNode;
 import com.jeantessier.dependency.Node;
+import com.jeantessier.dependency.PackageNode;
 
 
 public class DependencyView extends ViewPart {
@@ -79,13 +82,19 @@ public class DependencyView extends ViewPart {
     }
 
     static class MyLabelProvider extends LabelProvider {
-//		final Image image = Display.getDefault().getSystemImage(SWT.ICON_WARNING);
 
         public Image getImage(Object element) {
-//			if (element.equals("Rock") || element.equals("Paper") || element.equals("Scissors")) {
-//				return image;
-//			}
-            return null;
+
+            Image image = null;
+            if (element instanceof Node) {
+                Node node = (Node) element;
+                if (node instanceof ClassNode) {
+                    image = Activator.getDefault().getImageRegistry().get("class");
+                } else if (node instanceof PackageNode) {
+                    image = Activator.getDefault().getImageRegistry().get("package");
+                }
+            }
+            return image;
         }
 
         public String getText(Object element) {
@@ -119,7 +128,6 @@ public class DependencyView extends ViewPart {
         viewer.getGraphControl().addKeyListener(new KeyListener() {
             @SuppressWarnings("unchecked")
             public void keyPressed(KeyEvent e) {
-                // TODO Auto-generated method stub
 
                 Object input = viewer.getInput();
                 if (input == null || !(input instanceof Collection)) return;

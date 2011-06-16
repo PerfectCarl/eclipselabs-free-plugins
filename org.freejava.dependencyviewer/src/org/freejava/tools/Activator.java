@@ -3,6 +3,8 @@ package org.freejava.tools;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -12,7 +14,7 @@ import org.osgi.framework.BundleContext;
 public class Activator extends AbstractUIPlugin {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "org.freejava.tools";
+	public static final String PLUGIN_ID = "org.freejava.dependencyviewer";
 
 	// The shared instance
 	private static Activator plugin;
@@ -48,6 +50,15 @@ public class Activator extends AbstractUIPlugin {
 	 */
 	public static Activator getDefault() {
 		return plugin;
+	}
+
+	@Override
+	protected void initializeImageRegistry(ImageRegistry registry) {
+	        super.initializeImageRegistry(registry);
+	        Image classImage = Activator.getImageDescriptor("/icons/class_obj.gif").createImage();
+	        Image packageImage = Activator.getImageDescriptor("/icons/package_obj.gif").createImage();
+	        registry.put("class", classImage);
+                registry.put("package", packageImage);
 	}
 
 	/**
