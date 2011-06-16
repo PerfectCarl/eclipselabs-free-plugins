@@ -44,6 +44,7 @@
 		  <with variable="selection">
 		    <iterate ifEmpty="false" operator="or">
 		      <or>
+		        <instanceof value="org.eclipse.jdt.core.IClassFile"></instanceof>
 		        <instanceof value="org.eclipse.jdt.core.ICompilationUnit"></instanceof>
 		        <instanceof value="org.eclipse.jdt.core.IPackageFragment"></instanceof>
 		        <instanceof value="org.eclipse.jdt.core.IPackageFragmentRoot"></instanceof>

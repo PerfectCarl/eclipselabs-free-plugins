@@ -11,12 +11,14 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.core.IClassFile;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IRegion;
+import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jface.viewers.ISelection;
@@ -30,7 +32,6 @@ import org.freejava.tools.Activator;
 import org.freejava.tools.handlers.dependency.DependencyView;
 
 import com.jeantessier.classreader.AggregatingClassfileLoader;
-import com.jeantessier.classreader.Classfile;
 import com.jeantessier.classreader.ClassfileLoader;
 import com.jeantessier.classreader.LoadListenerVisitorAdapter;
 import com.jeantessier.classreader.TransientClassfileLoader;
@@ -185,8 +186,23 @@ public class ViewDependencyHandler extends AbstractHandler {
                     }
                 }
             } else {
-                if (aSelection instanceof ICompilationUnit) {
-                    names.add(aSelection.getElementName());
+                if (aSelection instanceof IClassFile) {
+                    IClassFile clf = (IClassFile) aSelection;
+                    names.add(clf.getType().getFullyQualifiedName());
+                    IPackageFragment pkg = (IPackageFragment) clf.getParent();
+                    IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
+                    File file;
+                    if (!pkgRoot.isExternal()) {
+                        file = pkgRoot.getResource().getLocation().toFile();
+                    } else {
+                        file = pkgRoot.getPath().toFile();
+                    }
+                    files.add(file);
+                } else if (aSelection instanceof ICompilationUnit) {
+                    ICompilationUnit unit = (ICompilationUnit) aSelection;
+                    for(IType type : unit.getTypes()){
+                        names.add(type.getFullyQualifiedName());
+                    }
                     IRegion region = JavaCore.newRegion();
                     region.add(aSelection);
                     IResource[] resources = JavaCore.getGeneratedResources(region, false);
@@ -196,7 +212,16 @@ public class ViewDependencyHandler extends AbstractHandler {
                 } else if (aSelection instanceof IPackageFragment) {
                     IPackageFragment pkg = (IPackageFragment) aSelection;
                     for (IJavaElement e : pkg.getChildren()) {
-                        names.add(e.getElementName());
+                        if (e instanceof ICompilationUnit) {
+                            ICompilationUnit unit = (ICompilationUnit) e;
+                            for(IType type : unit.getTypes()){
+                                names.add(type.getFullyQualifiedName());
+                            }
+                        }
+                        if (e instanceof IClassFile) {
+                            IClassFile clf = (IClassFile) e;
+                            names.add(clf.getType().getFullyQualifiedName());
+                        }
                     }
                     if ((((IPackageFragment)aSelection).getKind() == IPackageFragmentRoot.K_BINARY)) {
                         IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
@@ -220,7 +245,16 @@ public class ViewDependencyHandler extends AbstractHandler {
                     for (IJavaElement e : pkgRoot.getChildren()) {
                         IPackageFragment pkg = (IPackageFragment) e;
                         for (IJavaElement e2 : pkg.getChildren()) {
-                            names.add(e2.getElementName());
+                            if (e2 instanceof ICompilationUnit) {
+                                ICompilationUnit unit = (ICompilationUnit) e2;
+                                for(IType type : unit.getTypes()){
+                                    names.add(type.getFullyQualifiedName());
+                                }
+                            }
+                            if (e2 instanceof IClassFile) {
+                                IClassFile clf = (IClassFile) e2;
+                                names.add(clf.getType().getFullyQualifiedName());
+                            }
                         }
                     }
                     if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY) {
@@ -243,7 +277,16 @@ public class ViewDependencyHandler extends AbstractHandler {
                     IJavaProject p = (IJavaProject) aSelection;
                     for (IPackageFragment pkg : p.getPackageFragments()) {
                         for (IJavaElement e2 : pkg.getChildren()) {
-                            names.add(e2.getElementName());
+                            if (e2 instanceof ICompilationUnit) {
+                                ICompilationUnit unit = (ICompilationUnit) e2;
+                                for(IType type : unit.getTypes()){
+                                    names.add(type.getFullyQualifiedName());
+                                }
+                            }
+                            if (e2 instanceof IClassFile) {
+                                IClassFile clf = (IClassFile) e2;
+                                names.add(clf.getType().getFullyQualifiedName());
+                            }
                         }
                     }
                     for (IPackageFragmentRoot pkgRoot : p.getPackageFragmentRoots()) {
@@ -315,10 +358,6 @@ public class ViewDependencyHandler extends AbstractHandler {
 
         LinkMaximizer maximizer = new LinkMaximizer();
         maximizer.traverseNodes(factory.getPackages().values());
-
-        for (Classfile cf : loader.getAllClassfiles()) {
-            names.add(cf.getClassName());
-        }
 
         CollectionSelectionCriteria scopeCriteria = new CollectionSelectionCriteria(names, null);
         scopeCriteria.setMatchingPackages(false);
