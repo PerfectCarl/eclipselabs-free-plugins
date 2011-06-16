@@ -74,8 +74,9 @@ public class ViewDependencyHandler extends AbstractHandler {
             boolean isViewPackageDependency = event.getCommand().getId().equals("org.freejava.tools.commands.viewPackageDependencyCommand");
             IStructuredSelection structuredSelection = (IStructuredSelection) selection;
             Set<String> names = new HashSet<String>();
+            Set<String> interfaces = new HashSet<String>();
             Set<File> files = new HashSet<File>();
-            findFilterNamesAndJarClassFiles(isViewPackageDependency, structuredSelection, names, files);
+            findFilterNamesAndJarClassFiles(isViewPackageDependency, structuredSelection, names, interfaces, files);
 
             Collection<Node> graphNodes;
             if (isViewPackageDependency) {
@@ -104,7 +105,7 @@ public class ViewDependencyHandler extends AbstractHandler {
                     Activator.logError("Cannot show view " + DependencyView.ID, e);
                 }
             }
-            dependencyView.setDependencyInfo(graphNodes);
+            dependencyView.setDependencyInfo(graphNodes, interfaces);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -113,7 +114,7 @@ public class ViewDependencyHandler extends AbstractHandler {
     }
 
     private void findFilterNamesAndJarClassFiles(boolean isViewPackageDependency,
-            IStructuredSelection structuredSelection, Set<String> names,
+            IStructuredSelection structuredSelection, Set<String> names, Set<String> interfaces,
             Set<File> files) throws JavaModelException {
         for (Iterator<?> iterator = structuredSelection.iterator(); iterator.hasNext();) {
             IJavaElement aSelection = (IJavaElement) iterator.next();
@@ -189,6 +190,7 @@ public class ViewDependencyHandler extends AbstractHandler {
                 if (aSelection instanceof IClassFile) {
                     IClassFile clf = (IClassFile) aSelection;
                     names.add(clf.getType().getFullyQualifiedName());
+                    if (clf.getType().isInterface()) interfaces.add(clf.getType().getFullyQualifiedName());
                     IPackageFragment pkg = (IPackageFragment) clf.getParent();
                     IPackageFragmentRoot pkgRoot = ((IPackageFragmentRoot)pkg.getParent());
                     File file;
@@ -202,6 +204,7 @@ public class ViewDependencyHandler extends AbstractHandler {
                     ICompilationUnit unit = (ICompilationUnit) aSelection;
                     for(IType type : unit.getTypes()){
                         names.add(type.getFullyQualifiedName());
+                        if (type.isInterface()) interfaces.add(type.getFullyQualifiedName());
                     }
                     IRegion region = JavaCore.newRegion();
                     region.add(aSelection);
@@ -216,11 +219,13 @@ public class ViewDependencyHandler extends AbstractHandler {
                             ICompilationUnit unit = (ICompilationUnit) e;
                             for(IType type : unit.getTypes()){
                                 names.add(type.getFullyQualifiedName());
+                                if (type.isInterface()) interfaces.add(type.getFullyQualifiedName());
                             }
                         }
                         if (e instanceof IClassFile) {
                             IClassFile clf = (IClassFile) e;
                             names.add(clf.getType().getFullyQualifiedName());
+                            if (clf.getType().isInterface()) interfaces.add(clf.getType().getFullyQualifiedName());
                         }
                     }
                     if ((((IPackageFragment)aSelection).getKind() == IPackageFragmentRoot.K_BINARY)) {
@@ -249,11 +254,13 @@ public class ViewDependencyHandler extends AbstractHandler {
                                 ICompilationUnit unit = (ICompilationUnit) e2;
                                 for(IType type : unit.getTypes()){
                                     names.add(type.getFullyQualifiedName());
+                                    if (type.isInterface()) interfaces.add(type.getFullyQualifiedName());
                                 }
                             }
                             if (e2 instanceof IClassFile) {
                                 IClassFile clf = (IClassFile) e2;
                                 names.add(clf.getType().getFullyQualifiedName());
+                                if (clf.getType().isInterface()) interfaces.add(clf.getType().getFullyQualifiedName());
                             }
                         }
                     }
@@ -281,11 +288,13 @@ public class ViewDependencyHandler extends AbstractHandler {
                                 ICompilationUnit unit = (ICompilationUnit) e2;
                                 for(IType type : unit.getTypes()){
                                     names.add(type.getFullyQualifiedName());
+                                    if (type.isInterface()) interfaces.add(type.getFullyQualifiedName());
                                 }
                             }
                             if (e2 instanceof IClassFile) {
                                 IClassFile clf = (IClassFile) e2;
                                 names.add(clf.getType().getFullyQualifiedName());
+                                if (clf.getType().isInterface()) interfaces.add(clf.getType().getFullyQualifiedName());
                             }
                         }
                     }

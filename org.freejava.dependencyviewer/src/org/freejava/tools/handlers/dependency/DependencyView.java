@@ -3,6 +3,7 @@ package org.freejava.tools.handlers.dependency;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -30,6 +31,7 @@ public class DependencyView extends ViewPart {
 
     public static final String ID = "org.freejava.tools.dependency";
     protected GraphViewer viewer;
+    protected Set<String> interfaces;
 
     static class MyContentProvider implements IGraphContentProvider {
 
@@ -82,6 +84,10 @@ public class DependencyView extends ViewPart {
     }
 
     static class MyLabelProvider extends LabelProvider {
+        DependencyView dependencyView;
+        public MyLabelProvider(DependencyView dependencyView) {
+            this.dependencyView = dependencyView;
+        }
 
         public Image getImage(Object element) {
 
@@ -89,7 +95,11 @@ public class DependencyView extends ViewPart {
             if (element instanceof Node) {
                 Node node = (Node) element;
                 if (node instanceof ClassNode) {
-                    image = Activator.getDefault().getImageRegistry().get("class");
+                    if (dependencyView.getInterfaces() != null && dependencyView.getInterfaces().contains(node.getName())) {
+                        image = Activator.getDefault().getImageRegistry().get("interface");
+                    } else {
+                        image = Activator.getDefault().getImageRegistry().get("class");
+                    }
                 } else if (node instanceof PackageNode) {
                     image = Activator.getDefault().getImageRegistry().get("package");
                 }
@@ -117,7 +127,7 @@ public class DependencyView extends ViewPart {
         viewer = new GraphViewer( parent, SWT.NONE );
         viewer.setConnectionStyle(ZestStyles.CONNECTIONS_DIRECTED);
         viewer.setContentProvider( new MyContentProvider() );
-        viewer.setLabelProvider( new MyLabelProvider() );
+        viewer.setLabelProvider( new MyLabelProvider(this) );
 //        viewer.setLayoutAlgorithm( new TreeLayoutAlgorithm(
 //            LayoutStyles.NO_LAYOUT_NODE_RESIZING ) );
         viewer.setLayoutAlgorithm( new SpringLayoutAlgorithm(
@@ -168,9 +178,13 @@ public class DependencyView extends ViewPart {
 
     }
 
+    public Set<String> getInterfaces() {
+        return interfaces;
+    }
 
 
-    public void setDependencyInfo(Collection<Node> pkgs) {
+    public void setDependencyInfo(Collection<Node> pkgs, Set<String> interfaces) {
+        this.interfaces = interfaces;
         viewer.setInput(pkgs);
         viewer.refresh();
 
