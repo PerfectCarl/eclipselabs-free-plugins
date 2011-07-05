@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Handler;
-import java.util.logging.LogManager;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -23,7 +21,6 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 public class JavaSourceAttacherHandler extends AbstractHandler {
     /**
@@ -171,13 +168,6 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
     }
 
     public static void main(String[] args) throws Exception {
-        java.util.logging.Logger rootLogger = LogManager.getLogManager()
-                .getLogger("");
-        Handler[] handlers = rootLogger.getHandlers();
-        for (int i = 0; i < handlers.length; i++) {
-            rootLogger.removeHandler(handlers[i]);
-        }
-        SLF4JBridgeHandler.install();
 
         // File bin = new
         // File("D:/projects/free-plugins/org.freejava.javasourceattacher/lib/commons-lang-2.4.jar");
