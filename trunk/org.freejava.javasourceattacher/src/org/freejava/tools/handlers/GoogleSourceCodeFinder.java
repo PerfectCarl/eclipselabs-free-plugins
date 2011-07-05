@@ -34,12 +34,14 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.cyberneko.html.parsers.DOMParser;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.silvertunnel.netlib.adapter.url.NetlibURLStreamHandlerFactory;
 import org.silvertunnel.netlib.api.NetFactory;
 import org.silvertunnel.netlib.api.NetLayer;
 import org.silvertunnel.netlib.api.NetLayerIDs;
+import org.silvertunnel.netlib.layer.tor.TorNetLayer;
+import org.silvertunnel.netlib.layer.tor.clientimpl.Tor;
+import org.silvertunnel.netlib.layer.tor.common.TorConfig;
+import org.silvertunnel.netlib.util.TempfileStringStorage;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.html.HTMLCollection;
@@ -49,7 +51,7 @@ import org.xml.sax.InputSource;
 public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
     private IProgressMonitor monitor;
-    private IStatus status = Status.OK_STATUS;
+    private Tor tor;
 
     public GoogleSourceCodeFinder(IProgressMonitor monitor) {
         this.monitor = monitor;
@@ -92,6 +94,13 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         }
 
         result = downloadSourceFile(fileNames, bin);
+
+        // shutdown tor if needed
+        if (tor != null) {
+            tor.close();
+            tor = null;
+        }
+
         return result;
     }
 
@@ -305,7 +314,17 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                 NetLayer lowerNetLayer = null;
                 try {
                     System.out.println("Will access URL via TOR network");
-                    lowerNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TOR);
+                    if (lowerNetLayer == null) {
+                        // create a new netLayer instance
+                        TorConfig.routeMinLength = TorConfig.routeMaxLength = 1;
+                        TorConfig.routeUniqueClassC = TorConfig.routeUniqueCountry = false;
+                        TorConfig.minimumIdleCircuits = 1;
+
+                        NetLayer tcpipNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TCPIP);
+                        NetLayer tlsNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TLS_OVER_TCPIP);
+                        tor = new Tor(tlsNetLayer, tcpipNetLayer, TempfileStringStorage.getInstance());
+                        lowerNetLayer = new TorNetLayer(tor);
+                    }
                     lowerNetLayer.waitUntilReady();
                     NetlibURLStreamHandlerFactory factory = new NetlibURLStreamHandlerFactory(false);
                     factory.setNetLayerForHttpHttpsFtp(lowerNetLayer);

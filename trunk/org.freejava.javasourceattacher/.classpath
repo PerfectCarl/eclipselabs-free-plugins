@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry exported="true" kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/bcprov-jdk15-145.jar" rootpath="" sourcepath="C:/Documents and Settings/Thai Ha/.sourceattacher/bcprov-jdk15-1.45-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jdom.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/silvertunnel.org_netlib.jar" sourcepath="lib/src.zip"/>
+	<classpathentry exported="true" kind="lib" path="lib/silvertunnel.org_netlib.jar" sourcepath="D:/silvertunnel.org_netlib"/>
 	<classpathentry exported="true" kind="lib" path="lib/xercesImpl.jar" sourcepath="C:/Documents and Settings/Thai Ha/.sourceattacher/Xerces-J-src.2.9.1.zip"/>
 	<classpathentry exported="true" kind="lib" path="lib/nekohtml.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.5.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-codec/commons-codec/sources/commons-codec-1.5-sources.jar"/>
