@@ -1,8 +1,8 @@
 package org.freejava.tools.handlers;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import net.sf.json.JSONArray;
@@ -34,6 +33,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.cyberneko.html.parsers.DOMParser;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.silvertunnel.netlib.adapter.url.NetlibURLStreamHandlerFactory;
 import org.silvertunnel.netlib.api.NetFactory;
 import org.silvertunnel.netlib.api.NetLayer;
@@ -45,6 +47,13 @@ import org.w3c.dom.html.HTMLDocument;
 import org.xml.sax.InputSource;
 
 public class GoogleSourceCodeFinder implements SourceCodeFinder {
+
+    private IProgressMonitor monitor;
+    private IStatus status = Status.OK_STATUS;
+
+    public GoogleSourceCodeFinder(IProgressMonitor monitor) {
+        this.monitor = monitor;
+    }
 
     public File find(File bin) throws Exception {
         File result;
@@ -102,7 +111,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         return ns;
     }
 
-    private static File downloadSourceFile(Collection<String> fileNames, File bin) throws Exception {
+    private File downloadSourceFile(Collection<String> fileNames, File bin) throws Exception {
         File result = null;
 
         List<String> folderLinks = searchFolderLinks(fileNames);
@@ -197,7 +206,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
-    private static List<String> searchLinksInPages(List<String> folderLinks) throws Exception {
+    private List<String> searchLinksInPages(List<String> folderLinks) throws Exception {
         List<String> links = new ArrayList<String>();
         for (String url : folderLinks) {
             URL url2 = new URL(url);
@@ -235,7 +244,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         return links;
     }
-    private static List<String> searchFolderLinks(Collection<String> fileNames) throws Exception {
+    private List<String> searchFolderLinks(Collection<String> fileNames) throws Exception {
         List<String> result = new ArrayList<String>();
         for (String fileName : fileNames) {
             String base = FilenameUtils.getBaseName(fileName);
@@ -268,8 +277,13 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
-    private static String getString(URL url) throws Exception {
-        String result;
+    private String getString(URL url) throws Exception {
+
+        if (monitor != null && monitor.isCanceled()) return null;
+
+        String result = null;
+        Exception exception = null;
+
         try {
             System.out.println("Will access URL via normal network");
             URLConnection con = url.openConnection();
@@ -282,34 +296,48 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
                 IOUtils.closeQuietly(is);
             }
         } catch (Exception e) {
-            try {
-                System.out.println("Will access URL via TOR network");
-                // try with Tor network
-                NetLayer lowerNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TOR);
-                lowerNetLayer.waitUntilReady();
-                NetlibURLStreamHandlerFactory factory = new NetlibURLStreamHandlerFactory(false);
-                factory.setNetLayerForHttpHttpsFtp(lowerNetLayer);
-                URLStreamHandler handler = factory.createURLStreamHandler(url.getProtocol());
-                URL context = null;
-                URL url2 = new URL(context, url.toExternalForm(), handler);
-                URLConnection con = url2.openConnection();
-                InputStream is = null;
-                try {
-                    is = con.getInputStream();
-                    result = IOUtils.toString(is);
-                } finally {
-                    IOUtils.closeQuietly(is);
-                }
+            exception = e;
+        }
 
-            } catch (Exception e2) {
-                e2.printStackTrace();
-                throw e;
+        if (exception != null) {
+            int error = 0;
+            while (error < 2) {
+                NetLayer lowerNetLayer = null;
+                try {
+                    System.out.println("Will access URL via TOR network");
+                    lowerNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TOR);
+                    lowerNetLayer.waitUntilReady();
+                    NetlibURLStreamHandlerFactory factory = new NetlibURLStreamHandlerFactory(false);
+                    factory.setNetLayerForHttpHttpsFtp(lowerNetLayer);
+                    URLStreamHandler handler = factory.createURLStreamHandler(url.getProtocol());
+                    URL context = null;
+                    URL url2 = new URL(context, url.toExternalForm(), handler);
+                    URLConnection con = url2.openConnection();
+                    InputStream is = null;
+                    try {
+                        is = con.getInputStream();
+                        result = IOUtils.toString(is);
+                    } finally {
+                        IOUtils.closeQuietly(is);
+                    }
+                    break;
+                } catch (Exception e2) {
+                    error ++;
+                    if (e2 instanceof FileNotFoundException) {
+                        error = 2;
+                        break;
+                    }
+                    e2.printStackTrace();
+                    lowerNetLayer.clear();
+                }
             }
+
+            if (error == 2) throw exception;
         }
         return result;
     }
 
-    private static List<String> findFileNames(String md5, String productName) throws Exception {
+    private List<String> findFileNames(String md5, String productName) throws Exception {
         List<String> result = new ArrayList<String>();
 
         // Guess real file name ([name]-[version].jar)
@@ -319,20 +347,24 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         System.out.println(json);
         List<String> links = getLinks(json);
         for (String link : links) {
-            if (link.endsWith(".md5")) {
-                String md5FileName = link.substring(link.lastIndexOf('/')+1);
-                result.add(md5FileName.substring(0, md5FileName.length() - ".md5".length()));
-            } else {
-                String text = getString(new URL(link));
-                String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
-                Pattern pattern = Pattern.compile(patternStr);
-                Matcher matcher = pattern.matcher(text);
-                while (matcher.find()) {
-                    String nm = matcher.group();
-                    if (nm.contains(productName)) {
-                        result.add(nm);
+            try {
+                if (link.endsWith(".md5")) {
+                    String md5FileName = link.substring(link.lastIndexOf('/')+1);
+                    result.add(md5FileName.substring(0, md5FileName.length() - ".md5".length()));
+                } else {
+                    String text = getString(new URL(link));
+                    String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
+                    Pattern pattern = Pattern.compile(patternStr);
+                    Matcher matcher = pattern.matcher(text);
+                    while (matcher.find()) {
+                        String nm = matcher.group();
+                        if (nm.contains(productName)) {
+                            result.add(nm);
+                        }
                     }
                 }
+            } catch (Exception e) {
+                // Ignore it
             }
         }
 
