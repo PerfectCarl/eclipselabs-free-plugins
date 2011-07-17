@@ -91,17 +91,17 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     if (monitor.isCanceled()) return Status.CANCEL_STATUS;
                     monitor.subTask("Attaching source to library " + file.getName());
 
-                    // Try to find source using Maven repos
-                    SourceCodeFinder mvnFinder = new MavenRepoSourceCodeFinder();
-                    File sourceFile = mvnFinder.find(file);
-                    if (sourceFile != null) {
-                        attachSource(pkgRoot, sourceFile.getAbsolutePath(), "");
-                    } else {
-                        SourceCodeFinder googleFinder = new GoogleSourceCodeFinder(monitor);
-                        sourceFile = googleFinder.find(file);
-                        if (sourceFile != null) {
-                            attachSource(pkgRoot, sourceFile.getAbsolutePath(), null);
-                        }
+                    FinderManager mgr = new FinderManager();
+                    mgr.findSourceFile(file.toString());
+                    while (!monitor.isCanceled() && mgr.isRunning() && mgr.getResults().isEmpty()) {
+                    	Thread.sleep(1000);
+                    }
+                    mgr.cancel();
+                    if (!mgr.getResults().isEmpty()) {
+                    	String url = (String) mgr.getResults().get(0);
+                    	System.out.println(url);
+                    	// TODO
+                        //attachSource(pkgRoot, sourceFile.getAbsolutePath(), null);
                     }
                 }
             } catch (Exception e) {
@@ -127,8 +127,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             }
             String rootPath = root.getPath().toOSString();
             if (entryPath.equals(rootPath)) {
-                entries[i] = addSourceAttachment(root, entries[i], sourcePath,
-                        sourceRoot);
+                entries[i] = addSourceAttachment(root, entries[i], sourcePath, sourceRoot);
                 break;
             }
         }

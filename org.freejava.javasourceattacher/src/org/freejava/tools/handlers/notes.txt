@@ -1,0 +1,66 @@
+g,a,v
+md5, sha1
+? name,version
+? class names
+
+->
+search gav
+search hash
+search class
+search name
+search mixed
+
+->
+sources url
+[]
+exact:
+gav
+md5
+sha1
+[]
+fuzzy:
+name, version, class
+
+
+/////////////////
+Nexus:
+http://repository.sonatype.org/index.html
+http://repository.apache.org/index.html
+http://repository.jboss.org/nexus/index.html
+http://oss.sonatype.org/index.html
+http://repository.ow2.org/nexus/index.html
+http://nexus.codehaus.org/index.html
+http://maven2.exoplatform.org/index.html
+http://maven.nuxeo.org/nexus/index.html
+http://maven.alfresco.com/nexus/index.html
+http://repository.cloudera.com/index.html
+http://nexus.xwiki.org/nexus/index.html
+
+
+Maven Central
+http://search.maven.org/
+
+mvnsearch
+http://www.mvnsearch.org/
+
+
+Artifact Repository
+http://www.artifact-repository.org
+
+mvnrepository
+http://mvnrepository.com
+
+mvnbrowser
+http://www.mvnbrowser.com
+
+jarvana
+http://www.jarvana.com
+
+mavenreposearch
+http://www.mavenreposearch.com/
+
+ozacc
+http://maven.ozacc.com/
+
+findjar
+http://www.findjar.com/index.x

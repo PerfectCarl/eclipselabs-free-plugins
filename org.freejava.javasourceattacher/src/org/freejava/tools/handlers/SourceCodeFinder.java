@@ -1,7 +1,8 @@
 package org.freejava.tools.handlers;
 
-import java.io.File;
+import java.util.List;
 
 public interface SourceCodeFinder {
-    public File find(File bin) throws Exception;
+    void find(String binFile, String serviceUrl, List<?> results);
+    void cancel();
 }

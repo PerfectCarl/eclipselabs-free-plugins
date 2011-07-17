@@ -57,6 +57,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         this.monitor = monitor;
     }
 
+    @Override
     public File find(File bin) throws Exception {
         File result;
 
@@ -287,7 +288,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
     }
 
     private String getString(URL url) throws Exception {
-
+    	System.out.println("getString: url:" + url.toString());
         if (monitor != null && monitor.isCanceled()) return null;
 
         String result = null;
@@ -295,6 +296,10 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
 
         try {
             System.out.println("Will access URL via normal network");
+            if (url.toString().contains("googleapis.com") || url.toString().contains("google.com")) {
+            	System.out.println("Sleep 10s");
+            	Thread.sleep(10000); // avoid google detection
+            }
             URLConnection con = url.openConnection();
             con.setRequestProperty("User-Agent", "Mozilla 5.0 (Windows; U; " + "Windows NT 5.1; en-US; rv:1.8.0.11) ");
             InputStream is = null;
@@ -306,6 +311,7 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
             }
         } catch (Exception e) {
             exception = e;
+            e.printStackTrace();
         }
 
         if (exception != null) {

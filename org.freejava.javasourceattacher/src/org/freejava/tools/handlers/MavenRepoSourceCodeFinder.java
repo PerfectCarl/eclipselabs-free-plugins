@@ -16,7 +16,10 @@ import org.apache.commons.io.IOUtils;
 
 public class MavenRepoSourceCodeFinder implements SourceCodeFinder {
 
+
+	@Override
     public File find(File bin) throws Exception {
+
         File sourceFile = null;
 
         String sha1 = DigestUtils.shaHex(FileUtils.openInputStream(bin));
