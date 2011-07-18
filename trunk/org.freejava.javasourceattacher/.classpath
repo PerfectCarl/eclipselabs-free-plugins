@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry exported="true" kind="lib" path="lib/bcprov-jdk15-145.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/nexus-indexer-lucene-plugin-client.jar" sourcepath="lib/nexus-indexer-lucene-plugin-client-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-logging-1.1.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jdom.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/silvertunnel.org_netlib.jar" sourcepath="D:/silvertunnel.org_netlib"/>
 	<classpathentry exported="true" kind="lib" path="lib/xercesImpl.jar" sourcepath="C:/Documents and Settings/Thai Ha/.sourceattacher/Xerces-J-src.2.9.1.zip"/>
 	<classpathentry exported="true" kind="lib" path="lib/nekohtml.jar"/>
-	<classpathentry kind="lib" path="lib/commons-codec-1.5.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-codec/commons-codec/sources/commons-codec-1.5-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-codec-1.5.jar"/>
 	<classpathentry kind="lib" path="lib/commons-beanutils-1.8.3.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-beanutils/commons-beanutils/sources/commons-beanutils-1.8.3-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections-3.2.1.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/commons-collections/commons-collections/sources/commons-collections-3.2.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib/ezmorph-1.0.6.jar" sourcepath="C:/Documents and Settings/Thai Ha/.ivy2/cache/net.sf.ezmorph/ezmorph/sources/ezmorph-1.0.6-sources.jar"/>
@@ -16,5 +16,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="tests"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

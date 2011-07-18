@@ -4,15 +4,29 @@ import java.util.List;
 
 public class SourceCodeFinderFacade implements SourceCodeFinder {
 
+	private SourceCodeFinder[] finders = new SourceCodeFinder[]{
+			new NexusSourceCodeFinder()
+	};
+
 	private SourceCodeFinder delegate;
 
 	@Override
-	public void find(String binFile, String serviceUrl, List<?> results) {
-		SourceCodeFinder[] finders = new SourceCodeFinder[]{
-				new NexusSourceCodeFinder()
-		};
+	public boolean support(String serviceUrl) {
+		boolean result = false;
 		for (SourceCodeFinder finder : finders) {
-			if (workWithService(finder, serviceUrl)) {
+			if (finder.support(serviceUrl)) {
+				result = true;
+				break;
+			}
+		}
+		return result;
+	}
+
+	@Override
+	public void find(String binFile, String serviceUrl, List results) {
+
+		for (SourceCodeFinder finder : finders) {
+			if (finder.support(serviceUrl)) {
 				delegate = finder;
 				break;
 			}
@@ -20,15 +34,9 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 		delegate.find(binFile, serviceUrl, results);
 	}
 
-	private boolean workWithService(SourceCodeFinder finder, String serviceUrl) {
-		InternetAccess access = new InternetAccess();
-		String txt = access.getContent(serviceUrl);
-
-		return false;
-	}
-
 	@Override
 	public void cancel() {
 		if (delegate != null) delegate.cancel();
 	}
+
 }
