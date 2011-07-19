@@ -48,7 +48,7 @@ import org.w3c.dom.html.HTMLCollection;
 import org.w3c.dom.html.HTMLDocument;
 import org.xml.sax.InputSource;
 
-public class GoogleSourceCodeFinder implements SourceCodeFinder {
+public class GoogleSourceCodeFinder  {
 
     private IProgressMonitor monitor;
     private Tor tor;
@@ -57,7 +57,6 @@ public class GoogleSourceCodeFinder implements SourceCodeFinder {
         this.monitor = monitor;
     }
 
-    @Override
     public File find(File bin) throws Exception {
         File result;
 

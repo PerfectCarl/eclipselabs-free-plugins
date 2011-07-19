@@ -93,13 +93,14 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 
                     FinderManager mgr = new FinderManager();
                     mgr.findSourceFile(file.toString());
-                    while (!monitor.isCanceled() && mgr.isRunning() && mgr.getResults().isEmpty()) {
+                    while (!monitor.isCanceled() && mgr.isRunning() /*&& mgr.getResults().isEmpty()*/) {
                     	Thread.sleep(1000);
                     }
                     mgr.cancel();
                     if (!mgr.getResults().isEmpty()) {
-                    	String url = (String) mgr.getResults().get(0);
-                    	System.out.println(url);
+                    	for (Object str : mgr.getResults()) System.out.println(str);
+                    	//String url = (String) mgr.getResults().get(0);
+                    	//System.out.println(url);
                     	// TODO
                         //attachSource(pkgRoot, sourceFile.getAbsolutePath(), null);
                     }

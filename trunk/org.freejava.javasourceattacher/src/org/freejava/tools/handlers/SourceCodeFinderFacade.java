@@ -5,7 +5,8 @@ import java.util.List;
 public class SourceCodeFinderFacade implements SourceCodeFinder {
 
 	private SourceCodeFinder[] finders = new SourceCodeFinder[]{
-			new NexusSourceCodeFinder()
+			new NexusSourceCodeFinder(),
+			new MavenRepoSourceCodeFinder()
 	};
 
 	private SourceCodeFinder delegate;
@@ -24,14 +25,16 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 
 	@Override
 	public void find(String binFile, String serviceUrl, List results) {
-
+		delegate = null;
 		for (SourceCodeFinder finder : finders) {
 			if (finder.support(serviceUrl)) {
 				delegate = finder;
 				break;
 			}
 		}
-		delegate.find(binFile, serviceUrl, results);
+		if (delegate != null)
+			delegate.find(binFile, serviceUrl, results);
+		else System.out.println("No provider for service:" + serviceUrl);
 	}
 
 	@Override

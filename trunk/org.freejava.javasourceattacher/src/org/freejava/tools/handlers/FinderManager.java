@@ -10,15 +10,15 @@ public class FinderManager {
     private static String[] urls = new String[] {
             // Nexus
             "http://repository.sonatype.org/index.html",
-            "http://repository.apache.org/index.html",
-            "http://repository.jboss.org/nexus/index.html",
+            "https://repository.apache.org/index.html",
+            "https://repository.jboss.org/nexus/index.html",
             "http://oss.sonatype.org/index.html",
             "http://repository.ow2.org/nexus/index.html",
-            "http://nexus.codehaus.org/index.html",
+            "https://nexus.codehaus.org/index.html",
             "http://maven2.exoplatform.org/index.html",
             "http://maven.nuxeo.org/nexus/index.html",
             "http://maven.alfresco.com/nexus/index.html",
-            "http://repository.cloudera.com/index.html",
+            "https://repository.cloudera.com/index.html",
             "http://nexus.xwiki.org/nexus/index.html",
 
             // Maven Central

@@ -16,6 +16,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
 import org.sonatype.nexus.rest.model.NexusArtifact;
 import org.sonatype.nexus.rest.model.NexusNGArtifact;
 import org.sonatype.nexus.rest.model.NexusNGArtifactHit;
@@ -32,7 +33,15 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 
 	@Override
 	public boolean support(String serviceUrl) {
-		return true;
+		boolean result = false;
+		try {
+			String id = "Nexus Maven Repository Manager";
+	        String html = IOUtils.toString(new URL(serviceUrl).openStream());
+	        result = (html.indexOf(id)  != -1);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
 	}
 
 	@Override
@@ -94,7 +103,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         Set<GAV> results = new HashSet<GAV>();
 		String nexusUrl = getNexusContextUrl(serviceUrl);
 
-		String[] endpoints = new String[] {nexusUrl + "service/local/data_index", nexusUrl + "service/local/lucene/search"};
+		String[] endpoints = new String[] {nexusUrl + "service/local/data_index"/*, nexusUrl + "service/local/lucene/search"*/};
 		for (String endpoint : endpoints) {
         	if (cancelled) return results;
 			String urlStr = endpoint;
