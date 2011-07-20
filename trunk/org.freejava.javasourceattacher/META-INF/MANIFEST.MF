@@ -26,3 +26,4 @@ Bundle-ClassPath: lib/commons-io-1.4.jar,
  lib/bcprov-jdk15-145.jar,
  lib/nexus-indexer-lucene-plugin-client.jar,
  .
+Export-Package: org.freejava.tools.handlers
