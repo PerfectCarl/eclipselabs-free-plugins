@@ -50,7 +50,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
     }
 
 	@Override
-    public void find(String binFile, String serviceUrl, List results) {
+    public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
 	        FileInputStream fis = new FileInputStream(new File(binFile));
@@ -79,7 +79,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         }
 
 		for (String url : sourcesUrls) {
-			results.add(url);
+			results.add(new SourceFileResult(url, 100));
 		}
 
     }

@@ -24,7 +24,7 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 	}
 
 	@Override
-	public void find(String binFile, String serviceUrl, List results) {
+	public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
 		delegate = null;
 		for (SourceCodeFinder finder : finders) {
 			if (finder.support(serviceUrl)) {
