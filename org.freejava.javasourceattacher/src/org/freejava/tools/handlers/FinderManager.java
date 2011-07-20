@@ -52,17 +52,17 @@ public class FinderManager {
             "http://www.google.com"
 
     };
-    private List results;
+    private List<SourceFileResult> results;
     private Worker[] workers;
 
     public FinderManager() {
-        results = Collections.synchronizedList(new ArrayList());
+        results = Collections.synchronizedList(new ArrayList<SourceFileResult>());
         // Create a set of worker threads
         final int numWorkers = 10;
         workers = new Worker[numWorkers];
     }
 
-    public List getResults() {
+    public List<SourceFileResult> getResults() {
 		return results;
 	}
 
@@ -136,11 +136,11 @@ public class FinderManager {
         public static final Object NO_MORE_WORK = new Object();
         private WorkQueue q;
         private String binFile;
-        private List results;
+        private List<SourceFileResult> results;
         private boolean stopping;
         private SourceCodeFinder finder;
 
-        public Worker(WorkQueue q, String binFile, List results) {
+        public Worker(WorkQueue q, String binFile, List<SourceFileResult> results) {
             this.q = q;
             this.binFile = binFile;
             this.results = results;

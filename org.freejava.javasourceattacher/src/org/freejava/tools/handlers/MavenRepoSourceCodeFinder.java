@@ -34,7 +34,7 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
 	}
 
 	@Override
-	public void find(String binFile, String serviceUrl, List results) {
+	public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
 	        FileInputStream fis = new FileInputStream(new File(binFile));
@@ -63,7 +63,7 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
         }
 
 		for (String url : sourcesUrls) {
-			results.add(url);
+			results.add(new SourceFileResult(url, 100));
 		}
     }
 
