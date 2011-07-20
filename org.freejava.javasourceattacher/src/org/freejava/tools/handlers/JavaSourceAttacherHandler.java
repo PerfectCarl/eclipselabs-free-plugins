@@ -2,6 +2,9 @@ package org.freejava.tools.handlers;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -92,14 +95,22 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     monitor.subTask("Attaching source to library " + file.getName());
 
                     FinderManager mgr = new FinderManager();
+                    Date d1 = new Date();
                     mgr.findSourceFile(file.toString());
-                    while (!monitor.isCanceled() && mgr.isRunning() && mgr.getResults().isEmpty()) {
+                    while (!monitor.isCanceled() && mgr.isRunning() && !hasCorrectSource(mgr.getResults())) {
                     	Thread.sleep(1000);
                     }
                     mgr.cancel();
                     if (!mgr.getResults().isEmpty()) {
-                    	for (SourceFileResult str : mgr.getResults()) {
-                    		System.out.println(str.getUrl());
+                    	List<SourceFileResult> list2 = new ArrayList<SourceFileResult>(mgr.getResults());
+                    	Collections.sort(list2, new Comparator<SourceFileResult>() {
+							@Override
+							public int compare(SourceFileResult o1, SourceFileResult o2) {
+								return o1.getAccuracy() - o2.getAccuracy();
+							}
+						});
+                    	for (SourceFileResult str : list2) {
+                    		System.out.println(str.getUrl() + "-" + str.getAccuracy());
                         	//String url = (String) mgr.getResults().get(0);
                         	//System.out.println(url);
                         	// TODO
@@ -114,7 +125,19 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return Status.OK_STATUS;
     }
 
-    private static void attachSource(IPackageFragmentRoot root,
+    private static boolean hasCorrectSource(List<SourceFileResult> results) {
+		boolean found = false;
+		for (SourceFileResult result : results) {
+			if (result.getAccuracy() == 100) {
+				found = true;
+				break;
+			}
+		}
+		System.out.println(found);
+		return found;
+	}
+
+	private static void attachSource(IPackageFragmentRoot root,
             String sourcePath, String sourceRoot) throws Exception {
         IJavaProject javaProject = root.getJavaProject();
         IClasspathEntry[] entries = (IClasspathEntry[]) javaProject

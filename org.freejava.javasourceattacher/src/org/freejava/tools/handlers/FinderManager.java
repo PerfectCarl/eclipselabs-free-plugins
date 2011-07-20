@@ -83,6 +83,7 @@ public class FinderManager {
             	workers[i].cancel();
             }
         }
+    	/*
     	for (int i = 0; i < workers.length; i++) {
             if (workers[i] != null && workers[i].isAlive()) {
             	try {
@@ -91,7 +92,7 @@ public class FinderManager {
 					e.printStackTrace();
 				}
             }
-        }
+        }*/
     }
 
     public void findSourceFile(String binFile) throws Exception {
