@@ -6,7 +6,8 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 
 	private SourceCodeFinder[] finders = new SourceCodeFinder[]{
 			new NexusSourceCodeFinder(),
-			new MavenRepoSourceCodeFinder()
+			new MavenRepoSourceCodeFinder(),
+			new GoogleSourceCodeFinder()
 	};
 
 	private SourceCodeFinder delegate;
@@ -34,7 +35,7 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 		}
 		if (delegate != null)
 			delegate.find(binFile, serviceUrl, results);
-		else System.out.println("No provider for service:" + serviceUrl);
+		else System.out.println("No provider for service: " + serviceUrl);
 	}
 
 	@Override
