@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -22,8 +21,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -33,7 +30,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.cyberneko.html.parsers.DOMParser;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.silvertunnel.netlib.adapter.url.NetlibURLStreamHandlerFactory;
 import org.silvertunnel.netlib.api.NetFactory;
 import org.silvertunnel.netlib.api.NetLayer;
@@ -48,60 +44,77 @@ import org.w3c.dom.html.HTMLCollection;
 import org.w3c.dom.html.HTMLDocument;
 import org.xml.sax.InputSource;
 
-public class GoogleSourceCodeFinder  {
+public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
-    private IProgressMonitor monitor;
+	private boolean canceled = false;
     private Tor tor;
 
-    public GoogleSourceCodeFinder(IProgressMonitor monitor) {
-        this.monitor = monitor;
+    public GoogleSourceCodeFinder() {
     }
 
-    public File find(File bin) throws Exception {
-        File result;
+	@Override
+	public void cancel() {
+		this.canceled = true;
 
-        String productName = parseProductName(FilenameUtils.getBaseName(bin.getName()));
+	}
 
-        Set<String> fileNames = new HashSet<String>();
-        fileNames.add(bin.getName());
+	@Override
+	public boolean support(String serviceUrl) {
+		return serviceUrl.startsWith("http://www.google.com");
+	}
 
-        InputStream is = FileUtils.openInputStream(bin);
-        String md5;
+	@Override
+	public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
+		File bin = new File(binFile);
+        String result = null;
         try {
-            md5 = DigestUtils.md5Hex(is);
-        } finally {
-            IOUtils.closeQuietly(is);
-        }
-        System.out.println("MD5:" + md5);
+	        String productName = parseProductName(FilenameUtils.getBaseName(bin.getName()));
 
-        fileNames.addAll(findFileNames(md5, productName));
+	        if (canceled) return;
 
-        try {
-            Properties p = new Properties();
-            p.load(new URL("http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/org.freejava.javasourceattacher/md5mapping.properties").openStream());
-            String altmd5 = p.getProperty(md5);
-            if (altmd5 != null) {
-                System.out.println("Alternative MD5:" + altmd5);
-                List<String> nvs3 = findFileNames(altmd5, productName);
-                fileNames.addAll(nvs3);
-            }
+	        Set<String> fileNames = new HashSet<String>();
+	        fileNames.add(bin.getName());
+
+	        InputStream is = FileUtils.openInputStream(bin);
+	        String md5;
+	        try {
+	            md5 = DigestUtils.md5Hex(is);
+	        } finally {
+	            IOUtils.closeQuietly(is);
+	        }
+
+	        if (canceled) return;
+
+	        fileNames.addAll(findFileNames(md5, productName));
+
+	        try {
+	            Properties p = new Properties();
+	            p.load(new URL("http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/org.freejava.javasourceattacher/md5mapping.properties").openStream());
+	            String altmd5 = p.getProperty(md5);
+	            if (altmd5 != null) {
+	                System.out.println("Alternative MD5:" + altmd5);
+	                List<String> nvs3 = findFileNames(altmd5, productName);
+	                fileNames.addAll(nvs3);
+	            }
+	        } catch (Exception e) {
+	            // ignore
+	        }
+
+	        if (canceled) return;
+
+	        result = findSourceFile(fileNames, bin);
         } catch (Exception e) {
-            // ignore
+			e.printStackTrace();
+		}
+        if (result != null) {
+        	results.add(new SourceFileResult(result, 50));
         }
-
-        for (String fileName : fileNames) {
-            System.out.println("Name:" + fileName);
-        }
-
-        result = downloadSourceFile(fileNames, bin);
 
         // shutdown tor if needed
         if (tor != null) {
             tor.close();
             tor = null;
         }
-
-        return result;
     }
 
     private static String parseProductName(String name) {
@@ -120,8 +133,9 @@ public class GoogleSourceCodeFinder  {
         return ns;
     }
 
-    private File downloadSourceFile(Collection<String> fileNames, File bin) throws Exception {
+    private String findSourceFile(Collection<String> fileNames, File bin) throws Exception {
         File result = null;
+        String url1 = null;
 
         List<String> folderLinks = searchFolderLinks(fileNames);
         List<String> links = searchLinksInPages(folderLinks);
@@ -176,43 +190,13 @@ public class GoogleSourceCodeFinder  {
             }
             if (isSourceCodeFor(file, bin)) {
                 result = file;
+                url1 = url;
                 break;
             } else {
                 file.delete();
             }
         }
-        return result;
-    }
-
-    private static boolean isSourceCodeFor(File src, File bin) throws Exception {
-        boolean result = false;
-
-        List<String> binList = new ArrayList<String>();
-        ZipFile zf = new ZipFile(bin);
-        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
-            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
-            binList.add(zipEntryName);
-        }
-
-        zf = new ZipFile(src);
-        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
-            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
-            String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
-            String fileExt = FilenameUtils.getExtension(zipEntryName);
-            if ("java".equals(fileExt) && fileBaseName != null) {
-                for (String zipEntryName2 : binList) {
-                    String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
-                    String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
-                    if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
-                        result = true;
-                        return result;
-                    }
-                }
-            }
-            binList.add(zipEntryName);
-        }
-
-        return result;
+        return url1;
     }
 
     private List<String> searchLinksInPages(List<String> folderLinks) throws Exception {
@@ -288,7 +272,6 @@ public class GoogleSourceCodeFinder  {
 
     private String getString(URL url) throws Exception {
     	System.out.println("getString: url:" + url.toString());
-        if (monitor != null && monitor.isCanceled()) return null;
 
         String result = null;
         Exception exception = null;
@@ -313,7 +296,7 @@ public class GoogleSourceCodeFinder  {
             e.printStackTrace();
         }
 
-        if (exception != null) {
+        if (exception != null && !(exception instanceof FileNotFoundException)) {
             int error = 0;
             while (error < 2) {
                 NetLayer lowerNetLayer = null;
@@ -428,5 +411,4 @@ public class GoogleSourceCodeFinder  {
         }
         return result;
     }
-
 }

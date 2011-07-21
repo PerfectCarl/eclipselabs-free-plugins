@@ -2,13 +2,20 @@ package org.freejava.tools.handlers;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
+
+import org.apache.commons.io.FilenameUtils;
 
 public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -49,4 +56,36 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 
 		return gavs;
 	}
+
+
+    protected static boolean isSourceCodeFor(File src, File bin) throws Exception {
+        boolean result = false;
+
+        List<String> binList = new ArrayList<String>();
+        ZipFile zf = new ZipFile(bin);
+        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+            binList.add(zipEntryName);
+        }
+
+        zf = new ZipFile(src);
+        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+            String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
+            String fileExt = FilenameUtils.getExtension(zipEntryName);
+            if ("java".equals(fileExt) && fileBaseName != null) {
+                for (String zipEntryName2 : binList) {
+                    String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
+                    String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
+                    if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
+                        result = true;
+                        return result;
+                    }
+                }
+            }
+            binList.add(zipEntryName);
+        }
+
+        return result;
+    }
 }

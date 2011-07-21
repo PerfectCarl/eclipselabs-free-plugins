@@ -97,7 +97,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     FinderManager mgr = new FinderManager();
                     Date d1 = new Date();
                     mgr.findSourceFile(file.toString());
-                    while (!monitor.isCanceled() && mgr.isRunning() && !hasCorrectSource(mgr.getResults())) {
+                    while (!monitor.isCanceled() && mgr.isRunning() /*&& !hasCorrectSource(mgr.getResults())*/) {
                     	Thread.sleep(1000);
                     }
                     mgr.cancel();
@@ -106,11 +106,11 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     	Collections.sort(list2, new Comparator<SourceFileResult>() {
 							@Override
 							public int compare(SourceFileResult o1, SourceFileResult o2) {
-								return o1.getAccuracy() - o2.getAccuracy();
+								return o2.getAccuracy() - o1.getAccuracy();
 							}
 						});
                     	for (SourceFileResult str : list2) {
-                    		System.out.println(str.getUrl() + "-" + str.getAccuracy());
+                    		System.out.println(str.getAccuracy()+ "-" + str.getUrl() );
                         	//String url = (String) mgr.getResults().get(0);
                         	//System.out.println(url);
                         	// TODO
@@ -133,7 +133,6 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 				break;
 			}
 		}
-		System.out.println(found);
 		return found;
 	}
 
@@ -191,19 +190,4 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         }
         return result;
     }
-
-    public static void main(String[] args) throws Exception {
-
-        // File bin = new
-        // File("D:/projects/free-plugins/org.freejava.javasourceattacher/lib/commons-lang-2.4.jar");
-        // File src = new MavenRepoSourceCodeFinder().find(bin);
-        // System.out.println(src);
-
-        File bin2 = new File(
-                "D:/projects/free-plugins/org.freejava.javasourceattacher/lib/commons-io-1.4.jar");
-        File src2 = new GoogleSourceCodeFinder(null).find(bin2);
-        System.out.println(src2);
-
-    }
-
 }
