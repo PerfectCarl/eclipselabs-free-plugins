@@ -4,9 +4,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -107,9 +109,15 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             } else {
                 file = pkgRoot.getPath().toFile();
             }
-            requests.put(file.getAbsolutePath(), pkgRoot);
+            try {
+            	requests.put(file.getCanonicalPath(), pkgRoot);
+            } catch (Exception e) {
+				e.printStackTrace();
+			}
         }
 
+        Set<String> notProcessedLibs = new HashSet<String>();
+        notProcessedLibs.addAll(requests.keySet());
 
         List<SourceFileResult> responses = Collections.synchronizedList(new ArrayList<SourceFileResult>());
         List<String> libs = new ArrayList<String>();
@@ -117,21 +125,8 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         FinderManager mgr = new FinderManager();
         mgr.findSources(libs, responses);
 
-        while (!monitor.isCanceled() && mgr.isRunning()) {
-        	while (!responses.isEmpty()) {
-        		SourceFileResult response = responses.remove(0);
-        		IPackageFragmentRoot pkgRoot = requests.get(response.getBinFile());
-        		String source = response.getSource();
-        		if (source != null) {
-            		// attach source to library
-        			try {
-        				attachSource(pkgRoot, source, null);
-        			} catch (Exception e) {
-						// ignore
-        				e.printStackTrace();
-					}
-        		}
-        	}
+        while (!monitor.isCanceled() && mgr.isRunning() && !notProcessedLibs.isEmpty()) {
+        	processLibSources(requests, notProcessedLibs, responses);
         	try {
         		Thread.sleep(1000);
         	} catch (Exception e) {
@@ -139,10 +134,36 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         		e.printStackTrace();
 			}
         }
+
         mgr.cancel();
+
+        if (!notProcessedLibs.isEmpty()) {
+        	processLibSources(requests, notProcessedLibs, responses);
+        }
 
         return Status.OK_STATUS;
     }
+
+	private static void processLibSources(
+			Map<String, IPackageFragmentRoot> requests,
+			Set<String> notProcessedLibs, List<SourceFileResult> responses) {
+		while (!responses.isEmpty()) {
+			SourceFileResult response = responses.remove(0);
+			String binFile = response.getBinFile();
+			if (notProcessedLibs.contains(binFile) && response.getSource() != null) {
+				notProcessedLibs.remove(response.getBinFile());
+				IPackageFragmentRoot pkgRoot = requests.get(binFile);
+				String source = response.getSource();
+				// attach source to library
+				try {
+					attachSource(pkgRoot, source, null);
+				} catch (Exception e) {
+					// ignore
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 
 	private static void attachSource(IPackageFragmentRoot root, String sourcePath, String sourceRoot) throws Exception {
         IJavaProject javaProject = root.getJavaProject();
