@@ -69,11 +69,15 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         }
 
 		for (Map.Entry<GAV, String> entry : sourcesUrls.entrySet()) {
-			String fileName = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
-			String result = download(entry.getValue(), fileName);
-        	if (isSourceCodeFor(result, binFile)) {
-        		results.add(new SourceFileResult(binFile, result, 100));
-        	}
+			String name = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
+        	try {
+        		String result = download(entry.getValue());
+	        	if (result != null && isSourceCodeFor(result, binFile)) {
+	        		results.add(new SourceFileResult(binFile, result, name, 100));
+	        	}
+        	} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
     }
 

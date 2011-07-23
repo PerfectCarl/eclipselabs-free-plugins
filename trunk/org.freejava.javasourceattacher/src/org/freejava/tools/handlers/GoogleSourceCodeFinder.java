@@ -117,10 +117,14 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 
         if (result != null) {
         	String name = result.substring(result.lastIndexOf('/'+1));
-        	result = download(result, name);
-        	if (isSourceCodeFor(result, binFile)) {
-        		results.add(new SourceFileResult(binFile, result, 50));
-        	}
+        	try {
+	        	result = download(result);
+	        	if (result != null && isSourceCodeFor(result, binFile)) {
+	        		results.add(new SourceFileResult(binFile, result, name, 50));
+	        	}
+        	} catch (Exception e) {
+				e.printStackTrace();
+			}
         }
 
 

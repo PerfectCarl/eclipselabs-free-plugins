@@ -35,6 +35,7 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
             // google
 */
 	private SourceCodeFinder[] finders = new SourceCodeFinder[]{
+			new MavenRepoSourceCodeFinder(),
 			new NexusSourceCodeFinder("http://repository.sonatype.org/index.html"),
 			new NexusSourceCodeFinder("https://repository.apache.org/index.html"),
 			new NexusSourceCodeFinder("https://repository.jboss.org/nexus/index.html"),
@@ -46,7 +47,6 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 			new NexusSourceCodeFinder("http://maven.alfresco.com/nexus/index.html"),
 			new NexusSourceCodeFinder("https://repository.cloudera.com/index.html"),
 			new NexusSourceCodeFinder("http://nexus.xwiki.org/nexus/index.html"),
-			new MavenRepoSourceCodeFinder(),
 			new GoogleSourceCodeFinder()
 	};
 
@@ -54,9 +54,10 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 
 	public void find(String binFile, List<SourceFileResult> results) {
 		for (int i = 0; i < finders.length && results.isEmpty() && !canceled; i++) {
-			SourceCodeFinder finder = finders[0];
+			SourceCodeFinder finder = finders[i];
 			finder.find(binFile, results);
 		}
+		System.out.println(results);
 	}
 
 	public void cancel() {
