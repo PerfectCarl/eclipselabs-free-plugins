@@ -52,7 +52,6 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
     public GoogleSourceCodeFinder() {
     }
 
-	@Override
 	public void cancel() {
 		this.canceled = true;
 
@@ -71,7 +70,6 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         return result;
 	}
 
-	@Override
 	public void find(String binFile, List<SourceFileResult> results) {
 		File bin = new File(binFile);
         String result = null;
@@ -146,7 +144,6 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
     }
 
     private String findSourceFile(Collection<String> fileNames, File bin) throws Exception {
-        File result = null;
         String url1 = null;
 
         List<String> folderLinks = searchFolderLinks(fileNames);
@@ -201,7 +198,6 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
                 }
             }
             if (isSourceCodeFor(file.getAbsolutePath(), bin.getAbsolutePath())) {
-                result = file;
                 url1 = url;
                 break;
             } else {

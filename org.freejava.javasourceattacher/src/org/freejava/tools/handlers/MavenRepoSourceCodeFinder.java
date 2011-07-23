@@ -22,13 +22,11 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
 
 	private boolean canceled = false;
 
-	@Override
 	public void cancel() {
 		this.canceled = true;
 
 	}
 
-	@Override
 	public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
