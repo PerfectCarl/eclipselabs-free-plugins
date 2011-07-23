@@ -96,8 +96,8 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
-    protected static String download(String url) {
-        String fileName = url.substring(url.lastIndexOf('/')+ 1);
+    protected static String download(String url, String fileName) {
+        //String fileName = url.substring(url.lastIndexOf('/')+ 1);
         File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
         File file = new File(cacheDir, fileName);
         if (!file.exists()) {

@@ -5,8 +5,10 @@ import java.io.FileInputStream;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.sf.json.JSONArray;
@@ -48,23 +50,24 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
 
 		if (canceled) return;
 
-		Collection<String> sourcesUrls = new HashSet<String>();
+		Map<GAV, String> sourcesUrls = new HashMap<GAV, String>();
 		try {
-			sourcesUrls.addAll(findSourcesUsingMavenCentral(gavs));
+			sourcesUrls.putAll(findSourcesUsingMavenCentral(gavs));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-		for (String url : sourcesUrls) {
-        	String result = download(url);
+		for (Map.Entry<GAV, String> entry : sourcesUrls.entrySet()) {
+			String fileName = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
+			String result = download(entry.getValue(), fileName);
         	if (isSourceCodeFor(result, binFile)) {
         		results.add(new SourceFileResult(binFile, result, 100));
         	}
 		}
     }
 
-    private Collection<String> findSourcesUsingMavenCentral(Collection<GAV> gavs) throws Exception {
-		Collection<String> results = new HashSet<String>();
+    private Map<GAV, String> findSourcesUsingMavenCentral(Collection<GAV> gavs) throws Exception {
+		Map<GAV, String> results = new HashMap<GAV, String>();
         for (GAV gav : gavs) {
         	if (canceled) return results;
 
@@ -86,7 +89,7 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
                 if (array.contains("-sources.jar")) {
 	                String path = g.replace('.', '/') + '/' + a + '/' + v + '/' + a + '-' + v + "-sources.jar";
 	                path = "http://search.maven.org/remotecontent?filepath=" + path;
-	                results.add(path);
+	                results.put(gav, path);
                 }
             }
         }
