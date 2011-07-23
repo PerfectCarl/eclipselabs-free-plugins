@@ -63,6 +63,7 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 
 
     protected static boolean isSourceCodeFor(String src, String bin) {
+    	System.out.println(src);
         boolean result = false;
         try {
 	        List<String> binList = new ArrayList<String>();
@@ -96,11 +97,13 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
-    protected static String download(String url, String fileName) {
-        File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
-        File file = new File(cacheDir, fileName);
-        if (!file.exists()) {
-            if (!cacheDir.exists()) cacheDir.mkdirs();
+    protected static String download(String url) throws Exception {
+        File file = File.createTempFile("ssourceattacher", ".tmp");
+
+    	//File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
+        //File file = new File(cacheDir, fileName);
+        //if (!file.exists()) {
+            //if (!cacheDir.exists()) cacheDir.mkdirs();
             OutputStream os = null;
             try {
             	os = FileUtils.openOutputStream(file);
@@ -109,8 +112,10 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
             } finally {
                 IOUtils.closeQuietly(os);
             }
+        //}
+        if (file.length() < 100) {
+        	System.out.println(url);
         }
-
         return file.getAbsolutePath();
     }
 }
