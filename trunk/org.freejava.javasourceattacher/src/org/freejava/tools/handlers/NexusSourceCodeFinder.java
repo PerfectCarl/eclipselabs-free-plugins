@@ -16,6 +16,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.sonatype.nexus.rest.model.NexusArtifact;
 import org.sonatype.nexus.rest.model.NexusNGArtifact;
@@ -26,22 +27,10 @@ import org.sonatype.nexus.rest.model.SearchResponse;
 public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
 	private boolean cancelled = false;
+	private String serviceUrl;
 
-	public NexusSourceCodeFinder() {
-
-	}
-
-	@Override
-	public boolean support(String serviceUrl) {
-		boolean result = false;
-		try {
-			String id = "Nexus Maven Repository Manager";
-	        String html = IOUtils.toString(new URL(serviceUrl).openStream());
-	        result = (html.indexOf(id)  != -1);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return result;
+	public NexusSourceCodeFinder(String serviceUrl) {
+		this.serviceUrl = serviceUrl;
 	}
 
 	@Override
@@ -50,12 +39,16 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
     }
 
 	@Override
-    public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
+    public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
-	        FileInputStream fis = new FileInputStream(new File(binFile));
-	        String sha1 = DigestUtils.shaHex(fis);
-	        fis.close();
+			String sha1;
+	        FileInputStream fis = FileUtils.openInputStream(new File(binFile));
+	        try {
+	        	sha1 = DigestUtils.shaHex(fis);
+	        } finally {
+	        	IOUtils.closeQuietly(fis);
+	        }
 	        gavs.addAll(findArtifactsUsingNexus(serviceUrl, null, null, null, null, sha1));
         } catch (Exception e) {
             e.printStackTrace();
@@ -79,10 +72,13 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         }
 
 		for (String url : sourcesUrls) {
-			results.add(new SourceFileResult(url, 100));
+        	String result = download(url);
+        	if (isSourceCodeFor(result, binFile)) {
+        		results.add(new SourceFileResult(binFile, result, 100));
+        	}
 		}
-
     }
+
 	private Collection<String> findSourcesUsingNexus(Collection<GAV> gavs, String serviceUrl) throws Exception {
 		Collection<String> results = new HashSet<String>();
 		String nexusUrl = getNexusContextUrl(serviceUrl);

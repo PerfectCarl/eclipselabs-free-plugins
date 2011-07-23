@@ -59,12 +59,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 	}
 
 	@Override
-	public boolean support(String serviceUrl) {
-		return serviceUrl.startsWith("http://www.google.com");
-	}
-
-	@Override
-	public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
+	public void find(String binFile, List<SourceFileResult> results) {
 		File bin = new File(binFile);
         String result = null;
         try {
@@ -107,7 +102,10 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 			e.printStackTrace();
 		}
         if (result != null) {
-        	results.add(new SourceFileResult(result, 50));
+        	result = download(result);
+        	if (isSourceCodeFor(result, binFile)) {
+        		results.add(new SourceFileResult(binFile, result, 50));
+        	}
         }
 
         // shutdown tor if needed
@@ -117,7 +115,8 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         }
     }
 
-    private static String parseProductName(String name) {
+
+	private static String parseProductName(String name) {
         String ns = null;
         Matcher m = Pattern.compile("([a-zA-Z\\-_]+)[\\-_]([0-9]+[0-9\\.]*[0-9]+)").matcher(name);
         if (m.find()) {
@@ -188,7 +187,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
                     IOUtils.closeQuietly(is);
                 }
             }
-            if (isSourceCodeFor(file, bin)) {
+            if (isSourceCodeFor(file.getAbsolutePath(), bin.getAbsolutePath())) {
                 result = file;
                 url1 = url;
                 break;

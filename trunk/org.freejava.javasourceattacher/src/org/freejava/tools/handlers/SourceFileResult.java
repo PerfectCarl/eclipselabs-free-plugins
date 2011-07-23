@@ -1,19 +1,27 @@
 package org.freejava.tools.handlers;
 
 public class SourceFileResult {
-	private String url;
-	int accuracy;
+	private String binFile;
+	private String source;
+	private int accuracy;
 
-	public SourceFileResult(String url, int accuracy) {
-		super();
-		this.url = url;
+	public SourceFileResult(String binFile, String source, int accuracy) {
+		this.binFile = binFile;
+		this.source = source;
 		this.accuracy = accuracy;
 	}
-	public String getUrl() {
-		return url;
+
+	public String getBinFile() {
+		return binFile;
 	}
-	public void setUrl(String url) {
-		this.url = url;
+	public void setBinFile(String binFile) {
+		this.binFile = binFile;
+	}
+	public String getSource() {
+		return source;
+	}
+	public void setSource(String source) {
+		this.source = source;
 	}
 	public int getAccuracy() {
 		return accuracy;
