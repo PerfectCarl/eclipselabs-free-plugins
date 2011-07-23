@@ -48,7 +48,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 	        } finally {
 	        	IOUtils.closeQuietly(fis);
 	        }
-	        gavs.addAll(findArtifactsUsingNexus(null, null, null, null, sha1));
+	        gavs.addAll(findArtifactsUsingNexus(null, null, null, null, sha1, false));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -83,7 +83,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 		Map<GAV, String> results = new HashMap<GAV, String>();
         for (GAV gav : gavs) {
         	if (canceled) return results;
-        	Set<GAV> gavs2 = findArtifactsUsingNexus(gav.getG(), gav.getA(), gav.getV(), "sources", null);
+        	Set<GAV> gavs2 = findArtifactsUsingNexus(gav.getG(), gav.getA(), gav.getV(), "sources", null, true);
 	        for (GAV gav2 : gavs2) {
 	        	results.put(gav, gav2.getArtifactLink());
 	        }
@@ -92,7 +92,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         return results;
 	}
 
-	private Set<GAV> findArtifactsUsingNexus(String g, String a, String v, String c, String sha1) throws Exception {
+	private Set<GAV> findArtifactsUsingNexus(String g, String a, String v, String c, String sha1, boolean getLink) throws Exception {
     	// http://repository.sonatype.org/service/local/lucene/search?sha1=686ef3410bcf4ab8ce7fd0b899e832aaba5facf7
 		// http://repository.sonatype.org/service/local/data_index?sha1=686ef3410bcf4ab8ce7fd0b899e832aaba5facf7
         Set<GAV> results = new HashSet<GAV>();
@@ -139,7 +139,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 		        		gav.setG(ar.getGroupId());
 		        		gav.setA(ar.getArtifactId());
 		        		gav.setV(ar.getVersion());
-		        		gav.setArtifactLink(ar.getArtifactLink());
+		        		if (getLink) gav.setArtifactLink(ar.getArtifactLink());
 		        		results.add(gav);
 		        	}
 		        }
