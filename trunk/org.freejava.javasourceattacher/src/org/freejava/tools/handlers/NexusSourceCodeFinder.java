@@ -32,12 +32,10 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 		this.serviceUrl = serviceUrl;
 	}
 
-	@Override
     public void cancel() {
 		this.canceled = true;
     }
 
-	@Override
     public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {

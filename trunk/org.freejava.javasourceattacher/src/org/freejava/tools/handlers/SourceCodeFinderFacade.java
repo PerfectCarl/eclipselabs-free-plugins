@@ -52,7 +52,6 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 
 	private boolean canceled;
 
-	@Override
 	public void find(String binFile, List<SourceFileResult> results) {
 		for (int i = 0; i < finders.length && results.isEmpty() && !canceled; i++) {
 			SourceCodeFinder finder = finders[0];
@@ -62,7 +61,6 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 		}
 	}
 
-	@Override
 	public void cancel() {
 		canceled = true;
 		for (int i = 0; i < finders.length && !canceled; i++) {
