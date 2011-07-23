@@ -102,7 +102,8 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 			e.printStackTrace();
 		}
         if (result != null) {
-        	result = download(result);
+        	String name = result.substring(result.lastIndexOf('/'+1));
+        	result = download(result, name);
         	if (isSourceCodeFor(result, binFile)) {
         		results.add(new SourceFileResult(binFile, result, 50));
         	}

@@ -54,7 +54,7 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 
 	@Override
 	public void find(String binFile, List<SourceFileResult> results) {
-		for (int i = 0; i < finders.length && !canceled; i++) {
+		for (int i = 0; i < finders.length && results.isEmpty() && !canceled; i++) {
 			SourceCodeFinder finder = finders[0];
 			finder.find(binFile, results);
 		}

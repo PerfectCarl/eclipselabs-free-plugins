@@ -6,6 +6,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,14 +20,12 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.sonatype.nexus.rest.model.NexusArtifact;
-import org.sonatype.nexus.rest.model.NexusNGArtifact;
-import org.sonatype.nexus.rest.model.NexusNGArtifactHit;
 import org.sonatype.nexus.rest.model.SearchNGResponse;
 import org.sonatype.nexus.rest.model.SearchResponse;
 
 public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
-	private boolean cancelled = false;
+	private boolean canceled = false;
 	private String serviceUrl;
 
 	public NexusSourceCodeFinder(String serviceUrl) {
@@ -35,7 +34,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 
 	@Override
     public void cancel() {
-		this.cancelled = true;
+		this.canceled = true;
     }
 
 	@Override
@@ -49,12 +48,12 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 	        } finally {
 	        	IOUtils.closeQuietly(fis);
 	        }
-	        gavs.addAll(findArtifactsUsingNexus(serviceUrl, null, null, null, null, sha1));
+	        gavs.addAll(findArtifactsUsingNexus(null, null, null, null, sha1));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-		if (cancelled) return;
+		if (canceled) return;
 
 		try {
 			gavs.addAll(findGAVFromFile(binFile));
@@ -62,46 +61,46 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
             e.printStackTrace();
         }
 
-		if (cancelled) return;
+		if (canceled) return;
 
-		Collection<String> sourcesUrls = new HashSet<String>();
+		Map<GAV, String> sourcesUrls = new HashMap<GAV, String>();
 		try {
-			sourcesUrls.addAll(findSourcesUsingNexus(gavs, serviceUrl));
+			sourcesUrls.putAll(findSourcesUsingNexus(gavs));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-		for (String url : sourcesUrls) {
-        	String result = download(url);
+		for (Map.Entry<GAV, String> entry : sourcesUrls.entrySet()) {
+			String fileName = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
+			String result = download(entry.getValue(), fileName);
         	if (isSourceCodeFor(result, binFile)) {
         		results.add(new SourceFileResult(binFile, result, 100));
         	}
 		}
     }
 
-	private Collection<String> findSourcesUsingNexus(Collection<GAV> gavs, String serviceUrl) throws Exception {
-		Collection<String> results = new HashSet<String>();
-		String nexusUrl = getNexusContextUrl(serviceUrl);
+	private Map<GAV, String> findSourcesUsingNexus(Collection<GAV> gavs) throws Exception {
+		Map<GAV, String> results = new HashMap<GAV, String>();
         for (GAV gav : gavs) {
-        	if (cancelled) return results;
-        	Set<GAV> gavs2 = findArtifactsUsingNexus(serviceUrl, gav.getG(), gav.getA(), gav.getV(), "sources", null);
+        	if (canceled) return results;
+        	Set<GAV> gavs2 = findArtifactsUsingNexus(gav.getG(), gav.getA(), gav.getV(), "sources", null);
 	        for (GAV gav2 : gavs2) {
-	        	results.add(gav2.getArtifactLink());
+	        	results.put(gav, gav2.getArtifactLink());
 	        }
         }
 
         return results;
 	}
 
-	private Set<GAV> findArtifactsUsingNexus(String serviceUrl, String g, String a, String v, String c, String sha1) throws Exception {
+	private Set<GAV> findArtifactsUsingNexus(String g, String a, String v, String c, String sha1) throws Exception {
     	// http://repository.sonatype.org/service/local/lucene/search?sha1=686ef3410bcf4ab8ce7fd0b899e832aaba5facf7
 		// http://repository.sonatype.org/service/local/data_index?sha1=686ef3410bcf4ab8ce7fd0b899e832aaba5facf7
         Set<GAV> results = new HashSet<GAV>();
-		String nexusUrl = getNexusContextUrl(serviceUrl);
+		String nexusUrl = getNexusContextUrl();
 
 		String[] endpoints = new String[] {nexusUrl + "service/local/data_index"/*, nexusUrl + "service/local/lucene/search"*/};
 		for (String endpoint : endpoints) {
-        	if (cancelled) return results;
+        	if (canceled) return results;
 			String urlStr = endpoint;
 	        LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
 	        if (g != null) {
@@ -144,6 +143,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 		        		results.add(gav);
 		        	}
 		        }
+		        /*
 		        if (resp instanceof SearchNGResponse) {
 		        	SearchNGResponse ngrsp = (SearchNGResponse) resp;
 		        	for (NexusNGArtifact ar : ngrsp.getData()) {
@@ -155,7 +155,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 			        		results.add(gav);
 		        		}
 		        	}
-		        }
+		        }*/
 	        } catch (Exception e) {
 	        	e.printStackTrace();
 			}
@@ -163,7 +163,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         return results;
 	}
 
-	private String getNexusContextUrl(String serviceUrl) {
+	private String getNexusContextUrl() {
 		String result = serviceUrl.substring(0, serviceUrl.lastIndexOf('/'));
 		if (!result.endsWith("/")) {
 			result += '/';
