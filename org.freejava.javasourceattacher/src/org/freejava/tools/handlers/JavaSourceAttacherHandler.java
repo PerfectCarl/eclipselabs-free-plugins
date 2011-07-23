@@ -3,10 +3,10 @@ package org.freejava.tools.handlers;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -46,8 +46,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         // * <li><code>org.eclipse.jdt.core.IJavaProject</code></li>
         IStructuredSelection structuredSelection = (IStructuredSelection) selection;
         final List<IPackageFragmentRoot> selections = new ArrayList<IPackageFragmentRoot>();
-        for (Iterator<?> iterator = structuredSelection.iterator(); iterator
-                .hasNext();) {
+        for (Iterator<?> iterator = structuredSelection.iterator(); iterator.hasNext();) {
             IJavaElement aSelection = (IJavaElement) iterator.next();
             if (aSelection instanceof IPackageFragmentRoot) {
                 IPackageFragmentRoot pkgRoot = (IPackageFragmentRoot) aSelection;
@@ -55,8 +54,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             } else if (aSelection instanceof IJavaProject) {
                 IJavaProject p = (IJavaProject) aSelection;
                 try {
-                    for (IPackageFragmentRoot pkgRoot : p
-                            .getPackageFragmentRoots()) {
+                    for (IPackageFragmentRoot pkgRoot : p.getPackageFragmentRoots()) {
                         selections.add(pkgRoot);
                     }
                 } catch (Exception e) {
@@ -65,88 +63,95 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             }
         }
 
-        Job job = new Job("Attaching source to library...") {
-            protected IStatus run(IProgressMonitor monitor) {
-                return updateSourceAttachments(selections, monitor);
-            }
-        };
-        job.setPriority(Job.LONG);
-        job.schedule();
-
-        return null;
-    }
-
-    private static IStatus updateSourceAttachments(List<IPackageFragmentRoot> roots, IProgressMonitor monitor) {
-        for (IPackageFragmentRoot pkgRoot : roots) {
+    	// Remove invalid selections first
+        for (Iterator<IPackageFragmentRoot> it = selections.iterator(); it.hasNext(); ) {
+        	IPackageFragmentRoot pkgRoot = it.next();
             try {
                 if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY
                         && pkgRoot.getSourceAttachmentPath() == null
                         && pkgRoot.isArchive()
                         && (pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_LIBRARY || pkgRoot
                                 .getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_VARIABLE)) {
-                    File file;
-                    if (!pkgRoot.isExternal()) {
-                        file = pkgRoot.getResource().getLocation().toFile();
-                    } else {
-                        file = pkgRoot.getPath().toFile();
-                    }
-
-                    if (monitor.isCanceled()) return Status.CANCEL_STATUS;
-                    monitor.subTask("Attaching source to library " + file.getName());
-
-                    FinderManager mgr = new FinderManager();
-                    Date d1 = new Date();
-                    mgr.findSourceFile(file.toString());
-                    while (!monitor.isCanceled() && mgr.isRunning() /*&& !hasCorrectSource(mgr.getResults())*/) {
-                    	Thread.sleep(1000);
-                    }
-                    mgr.cancel();
-                    if (!mgr.getResults().isEmpty()) {
-                    	List<SourceFileResult> list2 = new ArrayList<SourceFileResult>(mgr.getResults());
-                    	Collections.sort(list2, new Comparator<SourceFileResult>() {
-							@Override
-							public int compare(SourceFileResult o1, SourceFileResult o2) {
-								return o2.getAccuracy() - o1.getAccuracy();
-							}
-						});
-                    	for (SourceFileResult str : list2) {
-                    		System.out.println(str.getAccuracy()+ "-" + str.getUrl() );
-                        	//String url = (String) mgr.getResults().get(0);
-                        	//System.out.println(url);
-                        	// TODO
-                            //attachSource(pkgRoot, sourceFile.getAbsolutePath(), null);
-                    	}
-                    }
+                	// OK, will process
+                } else {
+                	// Not valid selection, ignore
+                	it.remove();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
-            }
+				e.printStackTrace();
+			}
         }
+
+        // Process valid requests in background
+        if (!selections.isEmpty()) {
+	        Job job = new Job("Attaching source to library...") {
+	            protected IStatus run(IProgressMonitor monitor) {
+	                return updateSourceAttachments(selections, monitor);
+	            }
+	        };
+	        job.setPriority(Job.LONG);
+	        job.schedule();
+        }
+
+        return null;
+    }
+
+    private static IStatus updateSourceAttachments(List<IPackageFragmentRoot> roots, IProgressMonitor monitor) {
+
+        // Process valid selections
+    	Map<String, IPackageFragmentRoot> requests = new HashMap<String, IPackageFragmentRoot>();
+        for (IPackageFragmentRoot pkgRoot : roots) {
+            File file;
+            if (!pkgRoot.isExternal()) {
+                file = pkgRoot.getResource().getLocation().toFile();
+            } else {
+                file = pkgRoot.getPath().toFile();
+            }
+            requests.put(file.getAbsolutePath(), pkgRoot);
+        }
+
+
+        List<SourceFileResult> responses = Collections.synchronizedList(new ArrayList<SourceFileResult>());
+        List<String> libs = new ArrayList<String>();
+        libs.addAll(requests.keySet());
+        FinderManager mgr = new FinderManager();
+        mgr.findSources(libs, responses);
+
+        while (!monitor.isCanceled() && mgr.isRunning()) {
+        	while (!responses.isEmpty()) {
+        		SourceFileResult response = responses.remove(0);
+        		IPackageFragmentRoot pkgRoot = requests.get(response.getBinFile());
+        		String source = response.getSource();
+        		if (source != null) {
+            		// attach source to library
+        			try {
+        				attachSource(pkgRoot, source, null);
+        			} catch (Exception e) {
+						// ignore
+        				e.printStackTrace();
+					}
+        		}
+        	}
+        	try {
+        		Thread.sleep(1000);
+        	} catch (Exception e) {
+				// ignore
+        		e.printStackTrace();
+			}
+        }
+        mgr.cancel();
+
         return Status.OK_STATUS;
     }
 
-    private static boolean hasCorrectSource(List<SourceFileResult> results) {
-		boolean found = false;
-		for (SourceFileResult result : results) {
-			if (result.getAccuracy() == 100) {
-				found = true;
-				break;
-			}
-		}
-		return found;
-	}
-
-	private static void attachSource(IPackageFragmentRoot root,
-            String sourcePath, String sourceRoot) throws Exception {
+	private static void attachSource(IPackageFragmentRoot root, String sourcePath, String sourceRoot) throws Exception {
         IJavaProject javaProject = root.getJavaProject();
-        IClasspathEntry[] entries = (IClasspathEntry[]) javaProject
-                .getRawClasspath().clone();
+        IClasspathEntry[] entries = (IClasspathEntry[]) javaProject.getRawClasspath().clone();
         for (int i = 0; i < entries.length; i++) {
             IClasspathEntry entry = entries[i];
             String entryPath;
             if (entry.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
-                entryPath = JavaCore.getResolvedVariablePath(entry.getPath())
-                        .toOSString();
+                entryPath = JavaCore.getResolvedVariablePath(entry.getPath()).toOSString();
             } else {
                 entryPath = entry.getPath().toOSString();
             }

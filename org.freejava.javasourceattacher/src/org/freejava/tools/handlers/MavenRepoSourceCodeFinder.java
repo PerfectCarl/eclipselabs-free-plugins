@@ -2,9 +2,6 @@ package org.freejava.tools.handlers;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Collection;
@@ -16,6 +13,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
@@ -29,17 +27,12 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
 	}
 
 	@Override
-	public boolean support(String serviceUrl) {
-		return serviceUrl.startsWith("http://search.maven.org");
-	}
-
-	@Override
-	public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
+	public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
-	        FileInputStream fis = new FileInputStream(new File(binFile));
+	        FileInputStream fis = FileUtils.openInputStream(new File(binFile));
 	        String sha1 = DigestUtils.shaHex(fis);
-	        fis.close();
+	        IOUtils.closeQuietly(fis);
 	        gavs.addAll(findArtifactsUsingMavenCentral(sha1));
         } catch (Exception e) {
             e.printStackTrace();
@@ -63,7 +56,10 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
         }
 
 		for (String url : sourcesUrls) {
-			results.add(new SourceFileResult(url, 100));
+        	String result = download(url);
+        	if (isSourceCodeFor(result, binFile)) {
+        		results.add(new SourceFileResult(binFile, result, 100));
+        	}
 		}
     }
 
@@ -115,7 +111,7 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
         }
 		return results;
 	}
-
+/*
 	private static File download(GAV srcinfo) throws Exception {
         File result = null;
         String groupId = srcinfo.getG();
@@ -131,28 +127,10 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
         HttpURLConnection con = (HttpURLConnection) srcUrl.openConnection();
         con.setRequestMethod("HEAD");
         if (con.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            result = download(srcUrl);
+            result = new File(download(url));
         }
 
         return result;
     }
-
-    private static File download(URL url) throws Exception {
-        String urlStr = url.toURI().toString();
-        String fileName = urlStr.substring(urlStr.lastIndexOf('/')+ 1);
-        File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
-        File file = new File(cacheDir, fileName);
-        if (!file.exists()) {
-            if (!cacheDir.exists()) cacheDir.mkdirs();
-            OutputStream os = new FileOutputStream(file);
-            try {
-                IOUtils.copy(url.openStream(), os);
-            } finally {
-                IOUtils.closeQuietly(os);
-            }
-        }
-        return file;
-
-    }
-
+    */
 }

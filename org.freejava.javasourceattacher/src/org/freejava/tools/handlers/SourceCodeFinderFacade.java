@@ -3,44 +3,70 @@ package org.freejava.tools.handlers;
 import java.util.List;
 
 public class SourceCodeFinderFacade implements SourceCodeFinder {
+/*
+            // Nexus
 
+            // Maven Central
+
+            // jarvana
+            "http://www.jarvana.com",
+
+            // mvnsearch
+            "http://www.mvnsearch.org/",
+
+            // findjar
+            "http://www.findjar.com/index.x",
+
+            // Artifact Repository
+            "http://www.artifact-repository.org",
+
+            // mvnrepository
+            "http://mvnrepository.com",
+
+            // mvnbrowser
+            "http://www.mvnbrowser.com",
+
+            // mavenreposearch
+            "http://www.mavenreposearch.com/",
+
+            // ozacc
+            "http://maven.ozacc.com/",
+
+            // google
+*/
 	private SourceCodeFinder[] finders = new SourceCodeFinder[]{
-			new NexusSourceCodeFinder(),
+			new NexusSourceCodeFinder("http://repository.sonatype.org/index.html"),
+			new NexusSourceCodeFinder("https://repository.apache.org/index.html"),
+			new NexusSourceCodeFinder("https://repository.jboss.org/nexus/index.html"),
+			new NexusSourceCodeFinder("http://oss.sonatype.org/index.html"),
+			new NexusSourceCodeFinder("http://repository.ow2.org/nexus/index.html"),
+			new NexusSourceCodeFinder("https://nexus.codehaus.org/index.html"),
+			new NexusSourceCodeFinder("http://maven2.exoplatform.org/index.html"),
+			new NexusSourceCodeFinder("http://maven.nuxeo.org/nexus/index.html"),
+			new NexusSourceCodeFinder("http://maven.alfresco.com/nexus/index.html"),
+			new NexusSourceCodeFinder("https://repository.cloudera.com/index.html"),
+			new NexusSourceCodeFinder("http://nexus.xwiki.org/nexus/index.html"),
 			new MavenRepoSourceCodeFinder(),
 			new GoogleSourceCodeFinder()
 	};
 
-	private SourceCodeFinder delegate;
+	private boolean canceled;
 
 	@Override
-	public boolean support(String serviceUrl) {
-		boolean result = false;
-		for (SourceCodeFinder finder : finders) {
-			if (finder.support(serviceUrl)) {
-				result = true;
-				break;
-			}
+	public void find(String binFile, List<SourceFileResult> results) {
+		for (int i = 0; i < finders.length && !canceled; i++) {
+			SourceCodeFinder finder = finders[0];
+			finder.find(binFile, results);
 		}
-		return result;
-	}
-
-	@Override
-	public void find(String binFile, String serviceUrl, List<SourceFileResult> results) {
-		delegate = null;
-		for (SourceCodeFinder finder : finders) {
-			if (finder.support(serviceUrl)) {
-				delegate = finder;
-				break;
-			}
-		}
-		if (delegate != null)
-			delegate.find(binFile, serviceUrl, results);
-		else System.out.println("No provider for service: " + serviceUrl);
 	}
 
 	@Override
 	public void cancel() {
-		if (delegate != null) delegate.cancel();
+		canceled = true;
+		for (int i = 0; i < finders.length && !canceled; i++) {
+			SourceCodeFinder finder = finders[0];
+			finder.cancel();
+		}
 	}
 
 }

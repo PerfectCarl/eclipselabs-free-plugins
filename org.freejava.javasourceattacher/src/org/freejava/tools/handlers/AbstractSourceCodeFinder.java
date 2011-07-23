@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -15,7 +17,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 
 public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -58,34 +62,56 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 	}
 
 
-    protected static boolean isSourceCodeFor(File src, File bin) throws Exception {
+    protected static boolean isSourceCodeFor(String src, String bin) {
         boolean result = false;
+        try {
+	        List<String> binList = new ArrayList<String>();
+	        ZipFile zf = new ZipFile(bin);
+	        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+	            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+	            binList.add(zipEntryName);
+	        }
 
-        List<String> binList = new ArrayList<String>();
-        ZipFile zf = new ZipFile(bin);
-        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
-            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
-            binList.add(zipEntryName);
-        }
-
-        zf = new ZipFile(src);
-        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
-            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
-            String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
-            String fileExt = FilenameUtils.getExtension(zipEntryName);
-            if ("java".equals(fileExt) && fileBaseName != null) {
-                for (String zipEntryName2 : binList) {
-                    String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
-                    String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
-                    if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
-                        result = true;
-                        return result;
-                    }
-                }
-            }
-            binList.add(zipEntryName);
-        }
+	        zf = new ZipFile(src);
+	        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+	            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+	            String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
+	            String fileExt = FilenameUtils.getExtension(zipEntryName);
+	            if ("java".equals(fileExt) && fileBaseName != null) {
+	                for (String zipEntryName2 : binList) {
+	                    String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
+	                    String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
+	                    if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
+	                        result = true;
+	                        return result;
+	                    }
+	                }
+	            }
+	            binList.add(zipEntryName);
+	        }
+        } catch (Exception e) {
+			e.printStackTrace();
+		}
 
         return result;
+    }
+
+    protected static String download(String url) {
+        String fileName = url.substring(url.lastIndexOf('/')+ 1);
+        File cacheDir = new File(System.getProperty("user.home") + File.separatorChar + ".sourceattacher");
+        File file = new File(cacheDir, fileName);
+        if (!file.exists()) {
+            if (!cacheDir.exists()) cacheDir.mkdirs();
+            OutputStream os = null;
+            try {
+            	os = FileUtils.openOutputStream(file);
+                IOUtils.copy(new URL(url).openStream(), os);
+            } catch (Exception e) {
+            } finally {
+                IOUtils.closeQuietly(os);
+            }
+        }
+
+        return file.getAbsolutePath();
     }
 }
