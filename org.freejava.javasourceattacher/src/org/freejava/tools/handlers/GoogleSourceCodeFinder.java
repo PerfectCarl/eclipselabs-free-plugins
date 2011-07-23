@@ -58,6 +58,19 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 
 	}
 
+	private boolean checkCanceled() {
+        boolean result = false;
+		if (canceled) {
+			// shutdown tor if needed
+	        if (tor != null) {
+	            tor.close();
+	            tor = null;
+	        }
+	        result = true;
+		}
+        return result;
+	}
+
 	@Override
 	public void find(String binFile, List<SourceFileResult> results) {
 		File bin = new File(binFile);
@@ -65,7 +78,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         try {
 	        String productName = parseProductName(FilenameUtils.getBaseName(bin.getName()));
 
-	        if (canceled) return;
+	        if (checkCanceled()) return;
 
 	        Set<String> fileNames = new HashSet<String>();
 	        fileNames.add(bin.getName());
@@ -78,7 +91,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 	            IOUtils.closeQuietly(is);
 	        }
 
-	        if (canceled) return;
+	        if (checkCanceled()) return;
 
 	        fileNames.addAll(findFileNames(md5, productName));
 
@@ -95,12 +108,15 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 	            // ignore
 	        }
 
-	        if (canceled) return;
+	        if (checkCanceled()) return;
 
 	        result = findSourceFile(fileNames, bin);
         } catch (Exception e) {
 			e.printStackTrace();
 		}
+
+        if (checkCanceled()) return;
+
         if (result != null) {
         	String name = result.substring(result.lastIndexOf('/'+1));
         	result = download(result, name);
@@ -109,11 +125,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         	}
         }
 
-        // shutdown tor if needed
-        if (tor != null) {
-            tor.close();
-            tor = null;
-        }
+
     }
 
 
