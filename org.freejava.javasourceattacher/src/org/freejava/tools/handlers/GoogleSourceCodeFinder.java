@@ -116,7 +116,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         if (checkCanceled()) return;
 
         if (result != null) {
-        	String name = result.substring(result.lastIndexOf('/'+1));
+        	String name = result.substring(result.lastIndexOf('/') + 1);
         	try {
 	        	result = download(result);
 	        	if (result != null && isSourceCodeFor(result, binFile)) {
@@ -156,7 +156,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             String link = it.next();
             boolean keep = false;
             for (String fileName : fileNames) {
-                if (link.contains(FilenameUtils.getBaseName(fileName)) && link.endsWith(".zip")) {
+                if (link.contains(FilenameUtils.getBaseName(fileName)) && (link.endsWith(".zip") || link.endsWith(".jar"))) {
                     keep = true;
                 }
             }
@@ -169,8 +169,8 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             public int compare(String o1, String o2) {
                 int i1 = 0, i2 = 0;
 
-                if (o1.contains("-src")) i1 = 1;
-                if (o2.contains("-src")) i2 = 1;
+                if (o1.contains("src") || o1.contains("sources")) i1 = 1;
+                if (o2.contains("src") || o2.contains("sources")) i2 = 1;
 
                 String patternStr = "[0-9\\-\\.]+";
                 Pattern pattern = Pattern.compile(patternStr);
@@ -224,6 +224,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
     private static List<String> searchLinksInPage(String url, String html) throws Exception {
         List<String> links = new ArrayList<String>();
         DOMParser parser = new DOMParser();
+        parser.setFeature("http://xml.org/sax/features/namespaces", false);
         parser.parse(new InputSource(new StringReader(html)));
         HTMLDocument document = (HTMLDocument) parser.getDocument();
         HTMLCollection pagelinks = document.getLinks();
@@ -251,33 +252,72 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
     }
     private List<String> searchFolderLinks(Collection<String> fileNames) throws Exception {
         List<String> result = new ArrayList<String>();
-        for (String fileName : fileNames) {
-            String base = FilenameUtils.getBaseName(fileName);
-            URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                    + "q=" + URLEncoder.encode(base + "-src.zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
+        String q = "intitle:\"index of\" \"Parent Directory\"";
+
+        String q1 = q;
+        List<String> namesq = new ArrayList<String>();
+        for (String name : fileNames) {
+            String base = FilenameUtils.getBaseName(name);
+            if (!base.contains("src") && !base.contains("sources")) {
+            	for (String sep : new String[]{"-", "_", "."}) {
+                	for (String src : new String[]{"src", "sources"}) {
+                    	for (String ext : new String[]{".jar", ".zip"}) {
+                        	namesq.add(base + sep + src + ext);
+                    	}
+                	}
+            	}
+            } else {
+            	namesq.add(base + ".jar");
+            	namesq.add(base + ".zip");
+            }
+        }
+
+        for (int i = 0; i < namesq.size(); i++) {
+        	if (i == 0) {
+        		q1 += " \"" + namesq.get(i) + "\"";
+        	} else {
+        		q1 += " OR \"" + namesq.get(i) + "\"";
+        	}
+        }
+
+        URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + URLEncoder.encode(q1, "UTF-8"));
+        System.out.println(url.toString());
+        String json = getString(url);
+        System.out.println(json);
+        List<String> links = getLinks(json);
+        if (links.isEmpty()) {
+            String q2 = q;
+            namesq = new ArrayList<String>();
+            for (String name : fileNames) {
+                String base = FilenameUtils.getBaseName(name);
+            	for (String ext : new String[]{".jar", ".zip"}) {
+                	namesq.add(base + ext);
+            	}
+            }
+            for (int i = 0; i < namesq.size(); i++) {
+            	if (i == 0) {
+            		q2 += " \"" + namesq.get(i) + "\"";
+            	} else {
+            		q2 += " OR \"" + namesq.get(i) + "\"";
+            	}
+            }
+
+            url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + URLEncoder.encode(q2, "UTF-8"));
             System.out.println(url.toString());
-            String json = getString(url);
+            json = getString(url);
             System.out.println(json);
-            List<String> links = getLinks(json);
+            links = getLinks(json);
             if (links.isEmpty()) {
-                url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&"
-                        + "q=" + URLEncoder.encode(base + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
-                System.out.println(url.toString());
-                json = getString(url);
-                System.out.println(json);
-                links = getLinks(json);
-                if (links.isEmpty()) {
-                    URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(base + ".zip intitle:\"index of\" \"Parent Directory\"", "UTF-8"));
-                    System.out.println(url2.toString());
-                    String html = getString(url2);
-                    links = searchLinksInPage(url2.toString(), html);
-                    for (Iterator<String> it = links.iterator(); it.hasNext();) {
-                        if (!it.next().endsWith("/")) it.remove();
-                    }
+                URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(q1, "UTF-8"));
+                System.out.println(url2.toString());
+                String html = getString(url2);
+                links = searchLinksInPage(url2.toString(), html);
+                for (Iterator<String> it = links.iterator(); it.hasNext();) {
+                    if (!it.next().endsWith("/")) it.remove();
                 }
             }
-            result.addAll(links);
         }
+        result.addAll(links);
 
         return result;
     }

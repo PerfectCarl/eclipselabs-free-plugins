@@ -1,5 +1,6 @@
 package org.freejava.tools.handlers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SourceCodeFinderFacade implements SourceCodeFinder {
@@ -53,11 +54,16 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 	private boolean canceled;
 
 	public void find(String binFile, List<SourceFileResult> results) {
-		for (int i = 0; i < finders.length && results.isEmpty() && !canceled; i++) {
+		for (int i = 0; i < finders.length && !canceled; i++) {
+			List<SourceFileResult> results2 = new ArrayList<SourceFileResult>();
 			SourceCodeFinder finder = finders[i];
-			finder.find(binFile, results);
+			finder.find(binFile, results2);
+			if (!results2.isEmpty()) {
+				results.addAll(results2);
+				break;
+			}
 		}
-		System.out.println(results);
+		System.out.println("DONE:" + binFile);
 	}
 
 	public void cancel() {
