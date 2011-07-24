@@ -25,5 +25,12 @@ Bundle-ClassPath: lib/commons-io-1.4.jar,
  lib/commons-logging-1.1.1.jar,
  lib/bcprov-jdk15-145.jar,
  lib/nexus-indexer-lucene-plugin-client.jar,
- .
+ .,
+ lib/gdata-client-1.0.jar,
+ lib/gdata-client-meta-1.0.jar,
+ lib/gdata-codesearch-2.0.jar,
+ lib/gdata-codesearch-meta-2.0.jar,
+ lib/gdata-core-1.0.jar,
+ lib/google-collect-1.0-rc1.jar,
+ lib/jsr305.jar
 Export-Package: org.freejava.tools.handlers
