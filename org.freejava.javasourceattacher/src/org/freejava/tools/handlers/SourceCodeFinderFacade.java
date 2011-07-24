@@ -60,10 +60,10 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 			finder.find(binFile, results2);
 			if (!results2.isEmpty()) {
 				results.addAll(results2);
+				System.out.println("DONE:" + binFile);
 				break;
 			}
 		}
-		System.out.println("DONE:" + binFile);
 	}
 
 	public void cancel() {
