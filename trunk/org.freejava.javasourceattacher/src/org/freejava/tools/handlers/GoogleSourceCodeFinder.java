@@ -81,32 +81,32 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 	        Set<String> fileNames = new HashSet<String>();
 	        fileNames.add(bin.getName());
 
-	        InputStream is = FileUtils.openInputStream(bin);
-	        String md5;
-	        try {
-	            md5 = DigestUtils.md5Hex(is);
-	        } finally {
-	            IOUtils.closeQuietly(is);
+	        // If file doesn't contain a version, try to find more names from Google using MD5 signature
+	        if (!Pattern.compile("([0-9]+)").matcher(bin.getName()).find()) {
+		        Set<String> md5s = new HashSet<String>();
+		        InputStream is = FileUtils.openInputStream(bin);
+		        String md5;
+		        try {
+		            md5 = DigestUtils.md5Hex(is);
+		            md5s.add(md5);
+		        } finally {
+		            IOUtils.closeQuietly(is);
+		        }
+		        if (checkCanceled()) return;
+		        try {
+		            Properties p = new Properties();
+		            p.load(new URL("http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/org.freejava.javasourceattacher/md5mapping.properties").openStream());
+		            String altmd5 = p.getProperty(md5);
+		            if (altmd5 != null) {
+		                System.out.println("Alternative MD5:" + altmd5);
+			            md5s.add(altmd5);
+		            }
+		        } catch (Exception e) {
+		            // ignore
+		        }
+		        if (checkCanceled()) return;
+		        fileNames.addAll(findFileNames(md5s, productName));
 	        }
-
-	        if (checkCanceled()) return;
-
-	        fileNames.addAll(findFileNames(md5, productName));
-
-	        try {
-	            Properties p = new Properties();
-	            p.load(new URL("http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/org.freejava.javasourceattacher/md5mapping.properties").openStream());
-	            String altmd5 = p.getProperty(md5);
-	            if (altmd5 != null) {
-	                System.out.println("Alternative MD5:" + altmd5);
-	                List<String> nvs3 = findFileNames(altmd5, productName);
-	                fileNames.addAll(nvs3);
-	            }
-	        } catch (Exception e) {
-	            // ignore
-	        }
-
-	        if (checkCanceled()) return;
 
 	        result = findSourceFile(fileNames, bin);
         } catch (Exception e) {
@@ -172,7 +172,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
                 if (o1.contains("src") || o1.contains("sources")) i1 = 1;
                 if (o2.contains("src") || o2.contains("sources")) i2 = 1;
 
-                String patternStr = "[0-9\\-\\.]+";
+                String patternStr = "[0-9\\_\\-\\.]+";
                 Pattern pattern = Pattern.compile(patternStr);
                 int verlength1 = 0, verlength2 = 0;
                 Matcher matcher = pattern.matcher(o1);
@@ -254,12 +254,34 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         List<String> result = new ArrayList<String>();
         String q = "intitle:\"index of\" \"Parent Directory\"";
 
-        String q1 = q;
         List<String> namesq = new ArrayList<String>();
         for (String name : fileNames) {
             String base = FilenameUtils.getBaseName(name);
+        	namesq.add(base + ".zip");
+        }
+    	String q1 = q;
+        for (int i = 0; i <namesq.size(); i++) {
+        	if (i == 0) {
+        		q1 += " \"" + namesq.get(i) + "\"";
+        	} else {
+        		q1 += " OR \"" + namesq.get(i) + "\"";
+        	}
+        }
+    	if (!q1.equals(q)) {
+            URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(q1, "UTF-8"));
+            System.out.println(url2.toString());
+            String html = getString(url2);
+            List<String> links = searchLinksInPage(url2.toString(), html);
+            for (Iterator<String> it = links.iterator(); it.hasNext();) {
+                if (!it.next().endsWith("/")) it.remove();
+            }
+            result.addAll(links);
+    	}
+        namesq.clear();
+        for (String name : fileNames) {
+            String base = FilenameUtils.getBaseName(name);
             if (!base.contains("src") && !base.contains("sources")) {
-            	for (String sep : new String[]{"-", "_", "."}) {
+            	for (String sep : new String[]{"-", "_"}) {
                 	for (String src : new String[]{"src", "sources"}) {
                     	for (String ext : new String[]{".jar", ".zip"}) {
                         	namesq.add(base + sep + src + ext);
@@ -271,53 +293,24 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             	namesq.add(base + ".zip");
             }
         }
-
-        for (int i = 0; i < namesq.size(); i++) {
+    	q1 = q;
+        for (int i = 0; i <namesq.size(); i++) {
         	if (i == 0) {
         		q1 += " \"" + namesq.get(i) + "\"";
         	} else {
         		q1 += " OR \"" + namesq.get(i) + "\"";
         	}
         }
-
-        URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + URLEncoder.encode(q1, "UTF-8"));
-        System.out.println(url.toString());
-        String json = getString(url);
-        System.out.println(json);
-        List<String> links = getLinks(json);
-        if (links.isEmpty()) {
-            String q2 = q;
-            namesq = new ArrayList<String>();
-            for (String name : fileNames) {
-                String base = FilenameUtils.getBaseName(name);
-            	for (String ext : new String[]{".jar", ".zip"}) {
-                	namesq.add(base + ext);
-            	}
+    	if (!q1.equals(q)) {
+            URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(q1, "UTF-8"));
+            System.out.println(url2.toString());
+            String html = getString(url2);
+            List<String> links = searchLinksInPage(url2.toString(), html);
+            for (Iterator<String> it = links.iterator(); it.hasNext();) {
+                if (!it.next().endsWith("/")) it.remove();
             }
-            for (int i = 0; i < namesq.size(); i++) {
-            	if (i == 0) {
-            		q2 += " \"" + namesq.get(i) + "\"";
-            	} else {
-            		q2 += " OR \"" + namesq.get(i) + "\"";
-            	}
-            }
-
-            url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + URLEncoder.encode(q2, "UTF-8"));
-            System.out.println(url.toString());
-            json = getString(url);
-            System.out.println(json);
-            links = getLinks(json);
-            if (links.isEmpty()) {
-                URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(q1, "UTF-8"));
-                System.out.println(url2.toString());
-                String html = getString(url2);
-                links = searchLinksInPage(url2.toString(), html);
-                for (Iterator<String> it = links.iterator(); it.hasNext();) {
-                    if (!it.next().endsWith("/")) it.remove();
-                }
-            }
-        }
-        result.addAll(links);
+            result.addAll(links);
+    	}
 
         return result;
     }
@@ -347,7 +340,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             exception = e;
             e.printStackTrace();
         }
-
+/*
         if (exception != null && !(exception instanceof FileNotFoundException)) {
             int error = 0;
             while (error < 2) {
@@ -393,14 +386,24 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 
             if (error == 2) throw exception;
         }
+        */
         return result;
     }
 
-    private List<String> findFileNames(String md5, String productName) throws Exception {
-        List<String> result = new ArrayList<String>();
+    private Set<String> findFileNames(Set<String> md5s, String productName) throws Exception {
+        Set<String> result = new HashSet<String>();
+
+        String md5str = null;
+        for (String md5 : md5s) {
+        	if (md5str == null) {
+        		md5str = md5;
+        	} else {
+        		md5str += " OR " + md5;
+        	}
+        }
 
         // Guess real file name ([name]-[version].jar)
-        URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&" + "q=" + md5);
+        URL url = new URL("http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q=" + URLEncoder.encode(md5str, "UTF-8"));
         System.out.println(url.toString());
         String json = getString(url);
         System.out.println(json);
@@ -410,9 +413,9 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
                 if (link.endsWith(".md5")) {
                     String md5FileName = link.substring(link.lastIndexOf('/')+1);
                     result.add(md5FileName.substring(0, md5FileName.length() - ".md5".length()));
-                } else {
+                } else {//
                     String text = getString(new URL(link));
-                    String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
+                    String patternStr = "[a-zA-Z][a-zA-Z0-9\\_\\-\\.]+\\.(jar|zip)";
                     Pattern pattern = Pattern.compile(patternStr);
                     Matcher matcher = pattern.matcher(text);
                     while (matcher.find()) {
@@ -427,7 +430,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             }
         }
 
-        URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + md5);
+        URL url2 = new URL("http://www.google.com/search?hl=vi&source=hp&biw=&bih=&q=" + URLEncoder.encode(md5str, "UTF-8"));
         System.out.println(url2.toString());
         String html = getString(url2);
         links =  searchLinksInPage(url2.toString(), html);
@@ -438,7 +441,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             }
         }
 
-        String patternStr = "[a-zA-Z][a-zA-Z0-9\\-\\.]+\\.jar";
+        String patternStr = "[a-zA-Z][a-zA-Z0-9\\_\\-\\.]+\\.(jar|zip)";
         Pattern pattern = Pattern.compile(patternStr);
         Matcher matcher = pattern.matcher(html);
         while (matcher.find()) {
