@@ -1,7 +1,6 @@
 package org.freejava.tools.handlers;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,7 +8,6 @@ import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.net.URLStreamHandler;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,14 +28,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.cyberneko.html.parsers.DOMParser;
-import org.silvertunnel.netlib.adapter.url.NetlibURLStreamHandlerFactory;
-import org.silvertunnel.netlib.api.NetFactory;
-import org.silvertunnel.netlib.api.NetLayer;
-import org.silvertunnel.netlib.api.NetLayerIDs;
-import org.silvertunnel.netlib.layer.tor.TorNetLayer;
-import org.silvertunnel.netlib.layer.tor.clientimpl.Tor;
-import org.silvertunnel.netlib.layer.tor.common.TorConfig;
-import org.silvertunnel.netlib.util.TempfileStringStorage;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.html.HTMLCollection;
@@ -47,7 +37,6 @@ import org.xml.sax.InputSource;
 public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
 	private boolean canceled = false;
-    private Tor tor;
 
     public GoogleSourceCodeFinder() {
     }
@@ -57,18 +46,6 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 
 	}
 
-	private boolean checkCanceled() {
-        boolean result = false;
-		if (canceled) {
-			// shutdown tor if needed
-	        if (tor != null) {
-	            tor.close();
-	            tor = null;
-	        }
-	        result = true;
-		}
-        return result;
-	}
 
 	public void find(String binFile, List<SourceFileResult> results) {
 		File bin = new File(binFile);
@@ -76,7 +53,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         try {
 	        String productName = parseProductName(FilenameUtils.getBaseName(bin.getName()));
 
-	        if (checkCanceled()) return;
+	        if (canceled) return;
 
 	        Set<String> fileNames = new HashSet<String>();
 	        fileNames.add(bin.getName());
@@ -92,7 +69,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 		        } finally {
 		            IOUtils.closeQuietly(is);
 		        }
-		        if (checkCanceled()) return;
+		        if (canceled) return;
 		        try {
 		            Properties p = new Properties();
 		            p.load(new URL("http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/org.freejava.javasourceattacher/md5mapping.properties").openStream());
@@ -104,7 +81,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 		        } catch (Exception e) {
 		            // ignore
 		        }
-		        if (checkCanceled()) return;
+		        if (canceled) return;
 		        fileNames.addAll(findFileNames(md5s, productName));
 	        }
 
@@ -113,7 +90,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 			e.printStackTrace();
 		}
 
-        if (checkCanceled()) return;
+        if (canceled) return;
 
         if (result != null) {
         	String name = result.substring(result.lastIndexOf('/') + 1);
@@ -216,7 +193,9 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         for (String url : folderLinks) {
             URL url2 = new URL(url);
             String html = getString(url2);
-            links.addAll(searchLinksInPage(url, html));
+            if (html != null) {
+            	links.addAll(searchLinksInPage(url, html));
+            }
         }
         return links;
     }
@@ -273,7 +252,8 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             String html = getString(url2);
             List<String> links = searchLinksInPage(url2.toString(), html);
             for (Iterator<String> it = links.iterator(); it.hasNext();) {
-                if (!it.next().endsWith("/")) it.remove();
+            	String link = it.next();
+                if (!link.endsWith("/") || link.contains("google.com")) it.remove();
             }
             result.addAll(links);
     	}
@@ -307,7 +287,8 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             String html = getString(url2);
             List<String> links = searchLinksInPage(url2.toString(), html);
             for (Iterator<String> it = links.iterator(); it.hasNext();) {
-                if (!it.next().endsWith("/")) it.remove();
+            	String link = it.next();
+                if (!link.endsWith("/") || link.contains("google.com")) it.remove();
             }
             result.addAll(links);
     	}
@@ -319,10 +300,8 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
     	System.out.println("getString: url:" + url.toString());
 
         String result = null;
-        Exception exception = null;
 
         try {
-            System.out.println("Will access URL via normal network");
             if (url.toString().contains("googleapis.com") || url.toString().contains("google.com")) {
             	System.out.println("Sleep 10s");
             	Thread.sleep(10000); // avoid google detection
@@ -337,56 +316,9 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
                 IOUtils.closeQuietly(is);
             }
         } catch (Exception e) {
-            exception = e;
             e.printStackTrace();
         }
-/*
-        if (exception != null && !(exception instanceof FileNotFoundException)) {
-            int error = 0;
-            while (error < 2) {
-                NetLayer lowerNetLayer = null;
-                try {
-                    System.out.println("Will access URL via TOR network");
-                    if (lowerNetLayer == null) {
-                        // create a new netLayer instance
-                        TorConfig.routeMinLength = TorConfig.routeMaxLength = 1;
-                        TorConfig.routeUniqueClassC = TorConfig.routeUniqueCountry = false;
-                        TorConfig.minimumIdleCircuits = 1;
 
-                        NetLayer tcpipNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TCPIP);
-                        NetLayer tlsNetLayer = NetFactory.getInstance().getNetLayerById(NetLayerIDs.TLS_OVER_TCPIP);
-                        tor = new Tor(tlsNetLayer, tcpipNetLayer, TempfileStringStorage.getInstance());
-                        lowerNetLayer = new TorNetLayer(tor);
-                    }
-                    lowerNetLayer.waitUntilReady();
-                    NetlibURLStreamHandlerFactory factory = new NetlibURLStreamHandlerFactory(false);
-                    factory.setNetLayerForHttpHttpsFtp(lowerNetLayer);
-                    URLStreamHandler handler = factory.createURLStreamHandler(url.getProtocol());
-                    URL context = null;
-                    URL url2 = new URL(context, url.toExternalForm(), handler);
-                    URLConnection con = url2.openConnection();
-                    InputStream is = null;
-                    try {
-                        is = con.getInputStream();
-                        result = IOUtils.toString(is);
-                    } finally {
-                        IOUtils.closeQuietly(is);
-                    }
-                    break;
-                } catch (Exception e2) {
-                    error ++;
-                    if (e2 instanceof FileNotFoundException) {
-                        error = 2;
-                        break;
-                    }
-                    e2.printStackTrace();
-                    lowerNetLayer.clear();
-                }
-            }
-
-            if (error == 2) throw exception;
-        }
-        */
         return result;
     }
 

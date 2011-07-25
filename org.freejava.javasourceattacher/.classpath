@@ -9,8 +9,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/gdata-core-1.0.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/nexus-indexer-lucene-plugin-client.jar" sourcepath="lib/nexus-indexer-lucene-plugin-client-sources.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/jdom.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/silvertunnel.org_netlib.jar" sourcepath="D:/silvertunnel.org_netlib"/>
 	<classpathentry exported="true" kind="lib" path="lib/xercesImpl.jar" sourcepath="C:/Documents and Settings/Thai Ha/.sourceattacher/Xerces-J-src.2.9.1.zip"/>
 	<classpathentry exported="true" kind="lib" path="lib/nekohtml.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.5.jar">
