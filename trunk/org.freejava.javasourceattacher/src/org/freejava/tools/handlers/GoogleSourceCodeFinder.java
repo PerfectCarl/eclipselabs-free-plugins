@@ -47,7 +47,7 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 
 	public void find(String binFile, List<SourceFileResult> results) {
 		File bin = new File(binFile);
-        String result = null;
+        String result[] = null;
         try {
 	        String productName = parseProductName(FilenameUtils.getBaseName(bin.getName()));
 
@@ -86,9 +86,9 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
 			e.printStackTrace();
 		}
 
-        if (result != null) {
-        	String name = result.substring(result.lastIndexOf('/') + 1);
-    		results.add(new SourceFileResult(binFile, result, name, 50));
+        if (result != null && result[0] != null) {
+        	String name = result[0].substring(result[0].lastIndexOf('/') + 1);
+    		results.add(new SourceFileResult(binFile, result[1], name, 50));
         }
     }
 
@@ -109,8 +109,9 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
         return ns;
     }
 
-    private String findSourceFile(Collection<String> fileNames, File bin) throws Exception {
+    private String[] findSourceFile(Collection<String> fileNames, File bin) throws Exception {
         String file = null;
+        String url = null;
 
         List<String> folderLinks = searchFolderLinks(fileNames);
         List<String> links = searchLinksInPages(folderLinks);
@@ -148,14 +149,15 @@ public class GoogleSourceCodeFinder extends AbstractSourceCodeFinder implements 
             }
         });
 
-        for (String url : links) {
-            String tmpFile = download(url);
+        for (String url1 : links) {
+            String tmpFile = download(url1);
         	if (tmpFile != null && isSourceCodeFor(tmpFile, bin.getAbsolutePath())) {
                 file = tmpFile;
+                url = url1;
                 break;
             }
         }
-        return file;
+        return new String[]{url, file};
     }
 
     private List<String> searchLinksInPages(List<String> folderLinks) throws Exception {
