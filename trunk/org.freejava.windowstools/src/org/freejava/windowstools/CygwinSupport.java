@@ -3,9 +3,11 @@ package org.freejava.windowstools;
 import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.cdt.utils.WindowsRegistry;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+
+import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.WinReg;
 
 public class CygwinSupport {
 	private static final String REGISTRY_KEY_SETUP = "SOFTWARE\\Cygwin\\setup"; //$NON-NLS-1$
@@ -19,7 +21,7 @@ public class CygwinSupport {
 
 
 	private static String readValueFromRegistry(String key, String name) {
-		WindowsRegistry registry = WindowsRegistry.getRegistry();
+		/*WindowsRegistry registry = WindowsRegistry.getRegistry();
 		if (null != registry) {
 			String s = registry.getCurrentUserValue(key, name);
 			if(s == null)
@@ -27,7 +29,14 @@ public class CygwinSupport {
 
 			if (s != null)
 				return (s.replaceAll(BSLASH, SSLASH));
-		}
+		}*/
+		String s = Advapi32Util.registryGetStringValue(WinReg.HKEY_CURRENT_USER, key, name);
+		if(s == null)
+			s = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, name);
+
+		if (s != null)
+			return (s.replaceAll(BSLASH, SSLASH));
+
 		return null;
 	}
 
