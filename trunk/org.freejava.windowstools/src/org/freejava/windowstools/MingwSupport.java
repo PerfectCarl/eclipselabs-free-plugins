@@ -10,7 +10,7 @@ import org.eclipse.core.runtime.Platform;
 
 public class MingwSupport {
 
-	public boolean supported() {
+	public boolean isInstalled() {
 		return getMsysBinDir() != null;
 	}
 
