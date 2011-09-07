@@ -20,7 +20,7 @@ public class MingwSupport {
 		if (path == null) {
 			new MingwInstaller().install(defaultInstallationPath);
 			if (new File(defaultInstallationPath).exists()) {
-				path = new Path(defaultInstallationPath, "msys\\1.0\\bin");
+				path = new Path(new File(defaultInstallationPath, "msys\\1.0\\bin").getCanonicalPath());
 			}
 		}
 
