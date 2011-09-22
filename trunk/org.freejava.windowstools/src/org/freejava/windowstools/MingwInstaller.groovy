@@ -2,6 +2,9 @@ package org.freejava.windowstools
 
 import org.apache.commons.io.FileUtils;
 
+import com.sun.jna.platform.win32.Advapi32Util;
+import com.sun.jna.platform.win32.WinReg;
+
 class MingwInstaller {
 	void install(String path) {
 
@@ -64,7 +67,29 @@ goto postExec
 :postExec
 '''
 			FileUtils.writeStringToFile(new File(path, "msys\\1.0\\console2.bat"), console2batStr.replace("\n", "\r\n"))
+			String batPath = new File(path, "msys\\1.0\\console2.bat").getAbsolutePath();
+
+			createExplorerCommand("Open MSYS Here", batPath)
 		}
+	}
+
+	public static void createExplorerCommand(String name, String progPath) {
+		String nameNoSpaces = name.replaceAll(" ", "");
+		String cmd = progPath;
+		if (cmd.indexOf(' ') != -1) {
+			cmd = "\"" + cmd + "\"";
+		}
+		cmd += " %L"
+
+		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell", nameNoSpaces)
+		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces, "", "Open MSYS Here")
+		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces, "command")
+		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces + "\\command", "", cmd)
+
+		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell", nameNoSpaces)
+		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces, "", "Open MSYS Here")
+		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces, "command")
+		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces + "\\command", "", cmd)
 	}
 }
 /*
@@ -93,4 +118,14 @@ c:\MinGW\msys\1.0\bin\sh --login -i -c console-config
 
 execute from c:/MinGW/msys/1.0/bin
 C:\MinGW\msys\1.0\lib\Console2\Console.exe -t "MinGW" -d "C:\"
+
+# see http://www.burgaud.com/open-command-window-here/
+[HKEY_CLASSES_ROOT\Directory\shell\CommandPrompt]
+@="Open Command Window Here"
+[HKEY_CLASSES_ROOT\Directory\shell\CommandPrompt\command]
+@="cmd.exe /k pushd %L"
+[HKEY_CLASSES_ROOT\Drive\shell\CommandPrompt]
+@="Open Command Window Here"
+[HKEY_CLASSES_ROOT\Drive\shell\CommandPrompt\command]
+@="cmd.exe /k pushd %L"
 */
