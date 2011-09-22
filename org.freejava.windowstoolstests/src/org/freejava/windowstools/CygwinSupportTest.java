@@ -1,5 +1,7 @@
 package org.freejava.windowstools;
 
+import java.io.File;
+
 import junit.framework.TestCase;
 
 /**
@@ -25,8 +27,8 @@ public class CygwinSupportTest extends TestCase {
 		super(name);
 	}
 	public void testShell() throws Exception {
-		CygwinSupport c = new CygwinSupport();
-		c.shell(null);
+		CygwinSupport support = new CygwinSupport();
+		support.shell("cygwin", new File("C:\\"), "C:\\cygwin");
 	}
 }
 
