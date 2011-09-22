@@ -30,18 +30,30 @@ public class CygwinSupport {
 			if (s != null)
 				return (s.replaceAll(BSLASH, SSLASH));
 		}*/
-		String s = Advapi32Util.registryGetStringValue(WinReg.HKEY_CURRENT_USER, key, name);
-		if(s == null)
-			s = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, name);
+		String s = null;
+		try {
+			s = Advapi32Util.registryGetStringValue(WinReg.HKEY_CURRENT_USER, key, name);
+		} catch (Exception e) {
+			// ignored
+		}
 
-		if (s != null)
+		if(s == null) {
+			try {
+				s = Advapi32Util.registryGetStringValue(WinReg.HKEY_LOCAL_MACHINE, key, name);
+			} catch (Exception e) {
+				// ignored
+			}
+		}
+
+		if (s != null) {
 			return (s.replaceAll(BSLASH, SSLASH));
+		}
 
 		return null;
 	}
 
 
-	public String getCygwinRootDir() {
+	private String getCygwinRootDir() {
 		String rootValue = null;
 
 		// 1. Look in PATH values. Look for bin\cygwin1.dll
@@ -90,10 +102,20 @@ public class CygwinSupport {
 
 		return rootValue;
 	}
+	public boolean isInstalled() {
+		return getCygwinRootDir() != null;
+	}
 
+	public void shell(String shell, File workingDir, String defaultInstallationPath) throws IOException {
 
-	public void shell(File workingDir) throws IOException {
 		String cygwinroot = getCygwinRootDir();
+		if (cygwinroot == null) {
+			new CygwinInstaller().install(defaultInstallationPath);
+			if (new File(defaultInstallationPath).exists()) {
+				cygwinroot = new File(defaultInstallationPath).getCanonicalPath();
+			}
+		}
+
 		if (cygwinroot != null) {
 			if (new File(cygwinroot, "bin\\mintty.exe").exists()) {
 			    Process child = Runtime.getRuntime().exec(new String[]{
