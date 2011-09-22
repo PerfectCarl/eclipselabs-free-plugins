@@ -6,8 +6,11 @@ import java.util.List;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 public class StartCygwinHandler extends AbstractHandler {
@@ -32,10 +35,22 @@ public class StartCygwinHandler extends AbstractHandler {
         if (!files.isEmpty()) {
             try {
             	File file = files.get(0);
-            	new CygwinSupport().shell(file.isDirectory() ? file : file.getParentFile());
+            	CygwinSupport s = new CygwinSupport();
+            	if (!s.isInstalled()) {
+            		Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+	            	boolean install = MessageDialog.openQuestion(shell,
+	            			"Install Cygwin",
+	            			"Do you want to install Cygwin? (it will take about 10 minutes)");
+	            	if (install) {
+	            		s.shell("cygwin", file.isDirectory() ? file : file.getParentFile(), "C:\\Cygwin");
+	            	}
+            	} else {
+            		s.shell("cygwin", file.isDirectory() ? file : file.getParentFile(), "C:\\Cygwin");
+            	}
             } catch (Exception e) {
     			// TODO: handle exception
     		}
+
         }
         return null;
     }
