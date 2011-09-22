@@ -79,7 +79,7 @@ goto postExec
 		if (cmd.indexOf(' ') != -1) {
 			cmd = "\"" + cmd + "\"";
 		}
-		cmd += " %L"
+		cmd += " \"%L\""
 
 		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell", nameNoSpaces)
 		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces, "", "Open MSYS Here")
