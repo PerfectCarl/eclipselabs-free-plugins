@@ -132,8 +132,14 @@ public class CygwinSupport {
 			    		"-c", "cd '" + workingDir.getAbsolutePath() + "' ; exec /bin/bash -rcfile ~/.bashrc"}, null,
 			    		new File(cygwinroot, "bin"));
 			} else {
-				//path = path.removeLastSegments(1).append("msys.bat");
-			    //Process child = Runtime.getRuntime().exec(new String[]{path.toOSString()});
+			    Process child = Runtime.getRuntime().exec(new String[]{
+			    		"cmd.exe",
+			    		"/c",
+			    		"start",
+			    		new File(cygwinroot, "bin\\bash.exe").getAbsolutePath(),
+			    		"--login", "-i",
+			    		"-c", "cd '" + workingDir.getAbsolutePath() + "' ; exec /bin/bash -rcfile ~/.bashrc"}, null,
+			    		workingDir);
 			}
 		}
 
