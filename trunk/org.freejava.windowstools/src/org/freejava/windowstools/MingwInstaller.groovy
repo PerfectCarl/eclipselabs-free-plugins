@@ -11,8 +11,7 @@ class MingwInstaller {
 		if (new File(path).exists()) return;
 
 		def ant = new AntBuilder()
-
-		def url = "http://nchc.dl.sourceforge.net/project/mingw/Automated%20MinGW%20Installer/mingw-get/mingw-get-0.3-alpha-2.1/mingw-get-0.3-mingw32-alpha-2.1-bin.zip"
+		def url = "http://ufpr.dl.sourceforge.net/project/mingw/Installer/mingw-get/mingw-get-0.4-alpha-1/mingw-get-0.4-mingw32-alpha-1-bin.zip"
 		def zipFileName = url.substring(url.lastIndexOf('/') + 1)
 		File tmpDir = new File(System.getProperty("java.io.tmpdir"))
 		ant.get (src: url, dest: tmpDir, usetimestamp: true, verbose: true)
