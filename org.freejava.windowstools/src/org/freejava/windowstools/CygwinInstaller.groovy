@@ -1,21 +1,122 @@
 package org.freejava.windowstools
 
 import org.apache.commons.io.FileUtils;
-
+import java.util.Map
+import java.io.File;
+import java.nio.charset.Charset
 import com.sun.jna.platform.win32.Advapi32Util;
 import com.sun.jna.platform.win32.WinReg;
+import com.google.common.io.Files
+import com.google.common.io.LineProcessor
+import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang.ArrayUtils
+import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.io.IOUtils;
+
 
 class CygwinInstaller {
+	private static final def SETUP_INI_FILENAME = "setup.ini"
+	private static final def SETUP_BZ2_FILENAME = "setup.bz2"
+
 	void install(String path) {
 
-		if (new File(path).exists()) return;
+		def setup = "http://cygwin.com/setup.exe";
+		def server = 'http://ftp.jaist.ac.jp/pub/cygwin/'
+		def packageNames = 'gcc'
+
+		//		if (new File(path).exists()) return;
+		File baseDir = new File(System.getProperty("java.io.tmpdir"));
+		File tmpDir = new File(baseDir, "cygwinsetup");
+		tmpDir.mkdir();
 
 		def ant = new AntBuilder()
-		File tmpDir = new File(System.getProperty("java.io.tmpdir"))
-		String url = "http://cygwin.com/setup.exe";
-		def setupFileName = url.substring(url.lastIndexOf('/') + 1)
-		ant.get (src: url, dest: tmpDir, usetimestamp: true, verbose: true)
 
+		// Download setup.ini
+		def iniFile = new File(tmpDir, SETUP_INI_FILENAME)
+		try {
+			ant.get (src: new URL(new URL(server), SETUP_BZ2_FILENAME) , dest: tmpDir, usetimestamp: true, verbose: true)
+			ant.bunzip2(src: new File(tmpDir, SETUP_BZ2_FILENAME), dest: iniFile)
+		} catch (Exception e) {
+			// ignore
+		}
+		if (!iniFile.exists()) {
+			ant.get (src: new URL(new URL(server), SETUP_INI_FILENAME) , dest: tmpDir, usetimestamp: true, verbose: true)
+		}
+
+		// Process setup.ini
+		final Map<String, Map> packs = new HashMap<String, Map>()
+		def final packages = []
+		def final selectedPackages = StringUtils.split(packageNames, " ,")
+		Files.readLines(iniFile, Charset.forName("UTF-8"),  new LineProcessor<Map<String, Map>>(){
+			boolean processLine(String line) {
+                line = StringUtils.trim(line)
+				if (StringUtils.startsWith(line, "@")) {
+					def name = StringUtils.trim(StringUtils.substring(line, 1))
+					packages.add(name)
+					packs.put(name, [ 'name': name,
+						'download': ArrayUtils.contains(selectedPackages, name),
+						"requires": [], "install" : null])
+				} else if (packages.size() > 0) {
+					def name = packages[packages.size() - 1]
+					def pack = packs.get(name)
+					if (StringUtils.startsWith(line, "category:")) {
+						if (ArrayUtils.contains(StringUtils.split(StringUtils.substring(line, 9), " ,"), "Base")) {
+							pack.put('download', true)
+						}
+					}
+					if (StringUtils.startsWith(line, "requires:")) {
+						pack.put('requires', StringUtils.split(StringUtils.substring(line, 9), " ,"))
+					}
+					if (StringUtils.startsWith(line, "install:") && pack['install'] == null) {
+                        pack.put('install', StringUtils.split(StringUtils.substring(line, 8), " "))
+					}
+				}
+				return true;
+			}
+			Map<String, Map> getResult() {
+				return packs;
+			}
+		});
+		Collections.sort(packages)
+
+		def processing = []
+		for (def p : packages) if (packs[p]['download']) processing.add(p)
+		def downloads = []
+		while (processing.size() > 0) {
+			def name = processing.remove(0)
+			if (!downloads.contains(name)) {
+				downloads.add(name)
+				def pack = packs[name]
+				processing.addAll(packs[name]['requires'])
+				packs[name].put('download', true)
+			}
+		}
+
+		ant.get (src: new URL(setup) , dest: tmpDir, usetimestamp: true, verbose: true)
+		System.out.println(packages);
+		System.out.println(downloads);
+
+		for (def name : downloads) {
+			def relpath = packs[name]['install'][0]
+			def file = new File(tmpDir, relpath)
+			Files.createParentDirs(file)
+			ant.get (src: new URL(new URL(server), relpath) , dest: file, usetimestamp: true, verbose: true)
+
+			def md5 = packs[name]['install'][2]
+			String filemd5;
+			InputStream is = null;
+			try {
+			    is = new FileInputStream(file)
+			    filemd5 = DigestUtils.md5Hex(is)
+			} catch (Exception e) {
+				IOUtils.closeQuietly(is)
+			}
+			if (!StringUtils.equalsIgnoreCase(md5, filemd5)) {
+				System.out.println("ERROR: Invalid download file :" + relpath);
+				file.delete();
+				break;
+			}
+		}
 	}
 
 	public static void createExplorerCommand(String name, String progPath) {
