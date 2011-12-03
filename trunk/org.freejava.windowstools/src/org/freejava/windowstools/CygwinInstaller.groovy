@@ -22,7 +22,7 @@ class CygwinInstaller {
 
 		def setup = "http://cygwin.com/setup.exe";
 		def server = 'http://ftp.jaist.ac.jp/pub/cygwin/'
-		def packageNames = 'gcc'
+		def packageNames = 'autoconf, automake, make, gcc, gdb, subversion, git, gitk, bison, chere, cvs, dog, dos2unix, patch, rxvt, shutdown, upx, vim, wget, which'
 		def root = "C:\\cygwin"
 
 		File baseDir = new File(System.getProperty("java.io.tmpdir"));
@@ -120,7 +120,7 @@ class CygwinInstaller {
 			}
 		}
 
-		// HACK: Update setup.ini to set category: Base for all required packages
+		// HACK: Update setup.ini to set "category: Base" for all required packages
 		// so setup.exe will install these packages automatically
 		def setupIniOrg = new File(tmpDir, "setup.ini.org")
 		ant.move(file: iniFile, tofile: setupIniOrg)
@@ -168,12 +168,12 @@ class CygwinInstaller {
 		cmd += " \"%L\""
 
 		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell", nameNoSpaces)
-		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces, "", "Open MSYS Here")
+		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces, "", "Open Cygwin Here")
 		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces, "command")
 		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Directory\\shell\\" + nameNoSpaces + "\\command", "", cmd)
 
 		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell", nameNoSpaces)
-		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces, "", "Open MSYS Here")
+		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces, "", "Open Cygwin Here")
 		Advapi32Util.registryCreateKey(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces, "command")
 		Advapi32Util.registrySetStringValue(WinReg.HKEY_CLASSES_ROOT, "Drive\\shell\\" + nameNoSpaces + "\\command", "", cmd)
 	}
