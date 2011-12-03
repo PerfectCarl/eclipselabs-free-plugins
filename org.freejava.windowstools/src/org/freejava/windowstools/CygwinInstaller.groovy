@@ -23,16 +23,17 @@ class CygwinInstaller {
 		def setup = "http://cygwin.com/setup.exe";
 		def server = 'http://ftp.jaist.ac.jp/pub/cygwin/'
 		def packageNames = 'gcc'
+		def root = "C:\\cygwin"
 
-		//		if (new File(path).exists()) return;
 		File baseDir = new File(System.getProperty("java.io.tmpdir"));
 		File tmpDir = new File(baseDir, "cygwinsetup");
 		tmpDir.mkdir();
 
 		def ant = new AntBuilder()
 
-		// Download setup.ini
+		// Download fresh setup.ini
 		def iniFile = new File(tmpDir, SETUP_INI_FILENAME)
+		iniFile.delete();
 		try {
 			ant.get (src: new URL(new URL(server), SETUP_BZ2_FILENAME) , dest: tmpDir, usetimestamp: true, verbose: true)
 			ant.bunzip2(src: new File(tmpDir, SETUP_BZ2_FILENAME), dest: iniFile)
@@ -40,7 +41,7 @@ class CygwinInstaller {
 			// ignore
 		}
 		if (!iniFile.exists()) {
-			ant.get (src: new URL(new URL(server), SETUP_INI_FILENAME) , dest: tmpDir, usetimestamp: true, verbose: true)
+			ant.get (src: new URL(new URL(server), SETUP_INI_FILENAME) , dest: tmpDir, usetimestamp: false, verbose: true)
 		}
 
 		// Process setup.ini
@@ -77,8 +78,8 @@ class CygwinInstaller {
 				return packs;
 			}
 		});
-		Collections.sort(packages)
 
+	    // Find all dependencies
 		def processing = []
 		for (def p : packages) if (packs[p]['download']) processing.add(p)
 		def downloads = []
@@ -91,11 +92,12 @@ class CygwinInstaller {
 				packs[name].put('download', true)
 			}
 		}
+		Collections.sort(downloads)
 
+		// Download setup.exe and all required packages
 		ant.get (src: new URL(setup) , dest: tmpDir, usetimestamp: true, verbose: true)
 		System.out.println(packages);
 		System.out.println(downloads);
-
 		for (def name : downloads) {
 			def relpath = packs[name]['install'][0]
 			def file = new File(tmpDir, relpath)
@@ -117,6 +119,44 @@ class CygwinInstaller {
 				break;
 			}
 		}
+
+		// HACK: Update setup.ini to set category: Base for all required packages
+		// so setup.exe will install these packages automatically
+		def setupIniOrg = new File(tmpDir, "setup.ini.org")
+		ant.move(file: iniFile, tofile: setupIniOrg)
+		String thisPackageName = null;
+		StringBuilder iniFileContent = new StringBuilder()
+		Files.readLines(setupIniOrg, Charset.forName("UTF-8"),  new LineProcessor<Object>(){
+			boolean processLine(String line) {
+				line = StringUtils.trim(line)
+				if (StringUtils.startsWith(line, "@")) {
+					thisPackageName = StringUtils.trim(StringUtils.substring(line, 1))
+				} else if (downloads.contains(thisPackageName)) {
+					if (StringUtils.startsWith(line, "category:")) {
+						if (!ArrayUtils.contains(StringUtils.split(StringUtils.substring(line, 9), " ,"), "Base")) {
+							line = "category: Base"
+						}
+					}
+				}
+				iniFileContent.append(line + "\n")
+				return true;
+			}
+			Object getResult() {
+				return null;
+			}
+		});
+		Files.write(iniFileContent, iniFile, Charset.forName("UTF-8"))
+
+		ant.exec(dir: tmpDir, executable : new File(tmpDir, "setup.exe")){
+			arg(value: "--local-install")
+			arg(value: "--local-package-dir")
+			arg(value: tmpDir)
+			arg(value: "--no-shortcuts")
+			arg(value: "--quiet-mode")
+			arg(value: "--root")
+			arg(value: root)
+		}
+		// setup --local-install --local-package-dir C:\cygwinsetup --quiet-mode --root C:\cygwin
 	}
 
 	public static void createExplorerCommand(String name, String progPath) {
