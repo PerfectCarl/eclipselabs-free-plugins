@@ -3,6 +3,7 @@ package org.freejava.windowstools;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 
@@ -117,13 +118,13 @@ public class CygwinSupport {
 		}
 
 		if (cygwinroot != null) {
-			if (new File(cygwinroot, "bin\\mintty.exe").exists()) {
+			if (StringUtils.equals(shell, "mintty") && new File(cygwinroot, "bin\\mintty.exe").exists()) {
 			    Process child = Runtime.getRuntime().exec(new String[]{
 			    		new File(cygwinroot, "bin\\mintty.exe").getAbsolutePath(),
 			    		"/bin/env", "CHERE_INVOKING=1", "/bin/bash", "-l",
 			    		"-c", "cd '" + workingDir.getAbsolutePath() + "' ; exec /bin/bash -rcfile ~/.bashrc"}, null,
 			    		new File(cygwinroot, "bin"));
-			} else if (new File(cygwinroot, "bin\\rxvt.exe").exists()) {
+			} else if (StringUtils.equals(shell, "rxvt") && new File(cygwinroot, "bin\\rxvt.exe").exists()) {
 			    Process child = Runtime.getRuntime().exec(new String[]{
 			    		new File(cygwinroot, "bin\\rxvt.exe").getAbsolutePath(),
 			    		"-fn", "courier",

@@ -9,8 +9,13 @@
       </category>
       <command
             categoryId="org.freejava.windowstools.category"
-            id="org.freejava.windowstools.startCygwinHandlerCommand"
-            name="Start Cygwin">
+            id="org.freejava.windowstools.startCygwinMinttyHandlerCommand"
+            name="Start Cygwin Mintty">
+      </command>
+      <command
+            categoryId="org.freejava.windowstools.category"
+            id="org.freejava.windowstools.startCygwinBashHandlerCommand"
+            name="Start Cygwin Bash">
       </command>
       <command
             categoryId="org.freejava.windowstools.category"
@@ -30,8 +35,11 @@
 
    </extension>
    <extension point="org.eclipse.ui.handlers">
-      <handler class="org.freejava.windowstools.StartCygwinHandler"
-            commandId="org.freejava.windowstools.startCygwinHandlerCommand">
+      <handler class="org.freejava.windowstools.StartCygwinMinttyHandler"
+            commandId="org.freejava.windowstools.startCygwinMinttyHandlerCommand">
+      </handler>
+      <handler class="org.freejava.windowstools.StartCygwinBashHandler"
+            commandId="org.freejava.windowstools.startCygwinBashHandlerCommand">
       </handler>
       <handler class="org.freejava.windowstools.StartMSYSConsoleHandler"
             commandId="org.freejava.windowstools.startMSYSConsoleHandlerCommand">
@@ -53,7 +61,8 @@
 	            </iterate>
 	          </with>
 	        </visibleWhen>
-	        <command commandId="org.freejava.windowstools.startCygwinHandlerCommand" icon="icons/cygwin0.ico"/>
+	        <command commandId="org.freejava.windowstools.startCygwinMinttyHandlerCommand" icon="icons/cygwin0.ico"/>
+	        <command commandId="org.freejava.windowstools.startCygwinBashHandlerCommand" icon="icons/cygwin0.ico"/>
 	        <command commandId="org.freejava.windowstools.startMSYSConsoleHandlerCommand"/>
 	        <command commandId="org.freejava.windowstools.startMSYSMinttyHandlerCommand"/>
 	        <command commandId="org.freejava.windowstools.startMSYSBashHandlerCommand"/>
