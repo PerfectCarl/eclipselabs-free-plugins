@@ -14,10 +14,12 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 public class StartCygwinHandler extends AbstractHandler {
+	private String shell;
 	/**
 	 * The constructor.
 	 */
-	public StartCygwinHandler() {
+	public StartCygwinHandler(String shell) {
+		this.shell = shell;
 	}
 
 	/**
@@ -42,10 +44,10 @@ public class StartCygwinHandler extends AbstractHandler {
 	            			"Install Cygwin",
 	            			"Do you want to install Cygwin? (it will take about 10 minutes)");
 	            	if (install) {
-	            		s.shell("cygwin", file.isDirectory() ? file : file.getParentFile(), "C:\\Cygwin");
+	            		s.shell(this.shell, file.isDirectory() ? file : file.getParentFile(), "C:\\Cygwin");
 	            	}
             	} else {
-            		s.shell("cygwin", file.isDirectory() ? file : file.getParentFile(), "C:\\Cygwin");
+            		s.shell(this.shell, file.isDirectory() ? file : file.getParentFile(), "C:\\Cygwin");
             	}
             } catch (Exception e) {
     			// TODO: handle exception
