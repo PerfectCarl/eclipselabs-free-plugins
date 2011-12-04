@@ -3,7 +3,8 @@
       id="org.freejava.windowstools.feature"
       label="Windows Tools Feature"
       version="1.0.0.0"
-      provider-name="Thai Ha">
+      provider-name="Thai Ha"
+      os="win32">
 
    <description url="http://svn.codespot.com/a/eclipselabs.org/free-plugins/">
       An Eclipse plugin to integrate Eclipse and Windows tools.
