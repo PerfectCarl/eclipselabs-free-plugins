@@ -71,7 +71,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         	IPackageFragmentRoot pkgRoot = it.next();
             try {
                 if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY
-                        && pkgRoot.getSourceAttachmentPath() == null
+                        //&& pkgRoot.getSourceAttachmentPath() == null
                         && pkgRoot.isArchive()
                         && (pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_LIBRARY || pkgRoot
                                 .getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_VARIABLE)) {
