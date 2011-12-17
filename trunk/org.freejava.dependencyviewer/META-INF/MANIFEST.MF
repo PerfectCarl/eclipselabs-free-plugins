@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: FreeJava Tools Plug-in
+Bundle-Name: Java Dependency Viewer Plug-in
 Bundle-SymbolicName: org.freejava.dependencyviewer;singleton:=true
 Bundle-Version: 1.0.0
 Bundle-Activator: org.freejava.tools.Activator
@@ -23,3 +23,4 @@ Bundle-ClassPath: lib/DependencyFinder.jar,
  lib/jakarta-oro.jar,
  lib/log4j.jar,
  .
+Bundle-Vendor: Thai Ha
