@@ -30,6 +30,10 @@
    limitations under the License.
    </license>
 
+   <url>
+      <update label="freejava" url="http://svn.codespot.com/a/eclipselabs.org/free-plugins/trunk/site"/>
+   </url>
+
    <plugin
          id="org.freejava.windowstools"
          download-size="0"
