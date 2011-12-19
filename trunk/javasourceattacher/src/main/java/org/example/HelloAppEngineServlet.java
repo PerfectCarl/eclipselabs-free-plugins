@@ -7,8 +7,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
-import org.example.manager.EmployeeManager;
-import org.example.model.Employee;
+import org.example.manager.BundleManager;
+import org.example.model.Bundle;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -23,13 +23,15 @@ public class HelloAppEngineServlet extends HttpServlet {
 		resp.setContentType("text/plain");
 		LOGGER.info("Saying hello using log4j.");
 		ApplicationContext context = WebApplicationContextUtils.getWebApplicationContext(getServletContext());
-		EmployeeManager em = (EmployeeManager) context.getBean("employeeManagerImpl");
-		Employee employee = new Employee() ;
-		employee.setFirstName("FirstName");
-		employee.setLastName("LastName");
-		em.add(employee);
+		BundleManager em = (BundleManager) context.getBean("bundleManagerImpl");
+		Bundle bundle = new Bundle() ;
+		bundle.setBinMd5("1234");
+		bundle.setSourceMd5("src1234");
+		bundle.setSourceUrl("srcurl");
+		em.add(bundle);
 
-		for (Employee e : em.getAll()) System.out.println(e.getFirstName());
+		for (Bundle e : em.getAll()) System.out.println(e.getSourceMd5());
+		for (Bundle e : em.findByBinMd5("1234")) System.out.println(e.getSourceUrl());
 		resp.getWriter().println("Hello, world");
 	}
 }
