@@ -2,7 +2,5 @@
 <datastore-indexes autoGenerate="true">
     <datastore-index kind="Bundle" ancestor="false">
         <property name="binMd5" direction="asc" />
-        <property name="sourceMd5" direction="asc" />
-        <property name="sourceUrl" direction="asc" />
     </datastore-index>
 </datastore-indexes>
