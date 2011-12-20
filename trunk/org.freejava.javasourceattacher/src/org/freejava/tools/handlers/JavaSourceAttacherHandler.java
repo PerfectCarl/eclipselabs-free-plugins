@@ -14,6 +14,7 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
@@ -73,9 +74,16 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                 if (pkgRoot.getKind() == IPackageFragmentRoot.K_BINARY
                         //&& pkgRoot.getSourceAttachmentPath() == null
                         && pkgRoot.isArchive()
-                        && (pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_LIBRARY || pkgRoot
-                                .getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_VARIABLE)) {
-                	// OK, will process
+                        && (pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_LIBRARY
+                        || pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_VARIABLE
+                        || pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_CONTAINER)) {
+                	IPath source = pkgRoot.getSourceAttachmentPath();
+                	if (source != null && !source.isEmpty() && new File(source.toOSString()).exists()) {
+                		// Valid source found, ignore
+                		it.remove();
+                	} else {
+                		// OK, will process
+                	}
                 } else {
                 	// Not valid selection, ignore
                 	it.remove();
@@ -168,8 +176,19 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 	}
 
 	private static void attachSource(IPackageFragmentRoot root, String sourcePath, String suggestedSourceFileName, String sourceRoot) throws Exception {
+
+		File sourceAttacherDir = new File(System.getProperty("user.home")
+                + File.separatorChar + ".sourceattacher");
+        if (!sourceAttacherDir.exists()) sourceAttacherDir.mkdirs();
+        File sourceFile = new File(sourceAttacherDir, suggestedSourceFileName);
+        if (!sourceFile.exists()) {
+        	FileUtils.copyFile(new File(sourcePath), sourceFile);
+        }
+        sourcePath = sourceFile.getAbsolutePath();
+
         IJavaProject javaProject = root.getJavaProject();
         IClasspathEntry[] entries = (IClasspathEntry[]) javaProject.getRawClasspath().clone();
+        boolean attached = false;
         for (int i = 0; i < entries.length; i++) {
             IClasspathEntry entry = entries[i];
             String entryPath;
@@ -180,24 +199,21 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             }
             String rootPath = root.getPath().toOSString();
             if (entryPath.equals(rootPath)) {
-                entries[i] = addSourceAttachment(root, entries[i], sourcePath, suggestedSourceFileName, sourceRoot);
+                entries[i] = addSourceAttachment(root, entries[i], sourcePath, sourceAttacherDir, sourceRoot);
+                attached = true;
                 break;
             }
         }
-        javaProject.setRawClasspath(entries, null);
+        if (attached) {
+        	javaProject.setRawClasspath(entries, null);
+        } else {
+        	root.attachSource(new Path(sourcePath), null, null);
+        }
     }
 
     private static IClasspathEntry addSourceAttachment(
             IPackageFragmentRoot root, IClasspathEntry entry,
-            String sourcePath, String suggestedSourceFileName, String sourceRoot) throws Exception {
-        File file = new File(System.getProperty("user.home")
-                + File.separatorChar + ".sourceattacher");
-        if (!file.exists()) file.mkdirs();
-        File sourceFile = new File(file, suggestedSourceFileName);
-        if (!sourceFile.exists()) {
-        	FileUtils.copyFile(new File(sourcePath), sourceFile);
-        }
-        sourcePath = sourceFile.getAbsolutePath();
+            String sourcePath, File sourceAttacherDir, String sourceRoot) throws Exception {
     	IClasspathEntry result;
         int entryKind = entry.getEntryKind();
         // CPE_PROJECT, CPE_LIBRARY, CPE_SOURCE, CPE_VARIABLE or CPE_CONTAINER
@@ -211,7 +227,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             break;
         case IClasspathEntry.CPE_VARIABLE:
             JavaCore.setClasspathVariable("SOURCE_ATTACHER",
-                    new Path(file.getAbsolutePath()), null);
+                    new Path(sourceAttacherDir.getAbsolutePath()), null);
             Path varAttPath = new Path("SOURCE_ATTACHER/"
                     + new File(sourcePath).getName());
             result = JavaCore.newVariableEntry(entry.getPath(), varAttPath,
