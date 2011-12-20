@@ -204,11 +204,11 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                 break;
             }
         }
-        if (attached) {
-        	javaProject.setRawClasspath(entries, null);
-        } else {
+        if (!attached) {
         	root.attachSource(new Path(sourcePath), null, null);
+        } else {
         }
+    	javaProject.setRawClasspath(entries, null);
     }
 
     private static IClasspathEntry addSourceAttachment(
