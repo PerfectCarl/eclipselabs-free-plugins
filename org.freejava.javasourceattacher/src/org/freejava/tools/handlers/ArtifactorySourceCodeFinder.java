@@ -86,7 +86,13 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
         	if (canceled) return results;
         	Set<GAV> gavs2 = findArtifactsUsingArtifactory(gav.getG(), gav.getA(), gav.getV(), "sources", null, true);
 	        for (GAV gav2 : gavs2) {
-	        	results.put(gav, gav2.getArtifactLink());
+	        	if (gav2.getArtifactLink().endsWith("-sources.jar") || gav2.getArtifactLink().endsWith("-sources.zip")) {
+	        		String uri = gav2.getArtifactLink();
+	        		File file = new File(download(uri));
+	        		String json = FileUtils.readFileToString(file);
+                	JSONObject resp = (JSONObject) JSONSerializer.toJSON( json );
+	        		results.put(gav, resp.getString("downloadUri"));
+	        	}
 	        }
         }
 
@@ -105,9 +111,9 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
 
 		String url;
 		if (sha1 != null) {
-			url = apiUrl + "/search/checksum?sha1=" + sha1;
+			url = apiUrl + "search/checksum?sha1=" + sha1;
 		} else {
-			url = apiUrl + "/search/gavc?g=" + g + "&a=" + a + "&v=" + v + (c != null ? "&c=" + c : "");
+			url = apiUrl + "search/gavc?g=" + g + "&a=" + a + "&v=" + v + (c != null ? "&c=" + c : "");
 		}
 
         URLConnection connection = new URL(url).openConnection();
