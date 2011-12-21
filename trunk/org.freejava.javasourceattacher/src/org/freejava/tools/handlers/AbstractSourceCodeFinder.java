@@ -4,8 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -99,15 +103,68 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
     protected static String download(String url) throws Exception {
         File file = File.createTempFile("ssourceattacher", ".tmp");
 
+        InputStream is = null;
         OutputStream os = null;
         try {
+            URLConnection conn = new URL(url).openConnection();
+            is = openConnectionCheckRedirects(conn);
         	os = FileUtils.openOutputStream(file);
-            IOUtils.copy(new URL(url).openStream(), os);
+            IOUtils.copy(is, os);
         } catch (Exception e) {
         } finally {
             IOUtils.closeQuietly(os);
+            IOUtils.closeQuietly(is);
         }
 
         return file.getAbsolutePath();
+    }
+
+    private static InputStream openConnectionCheckRedirects(URLConnection c) throws IOException
+    {
+       boolean redir;
+       int redirects = 0;
+       InputStream in = null;
+       do
+       {
+          if (c instanceof HttpURLConnection)
+          {
+             ((HttpURLConnection) c).setInstanceFollowRedirects(false);
+          }
+          c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7");
+
+          // We want to open the input stream before getting headers
+          // because getHeaderField() et al swallow IOExceptions.
+          in = c.getInputStream();
+          redir = false;
+          if (c instanceof HttpURLConnection)
+          {
+             HttpURLConnection http = (HttpURLConnection) c;
+             int stat = http.getResponseCode();
+             if (stat >= 300 && stat <= 307 && stat != 306 &&
+                stat != HttpURLConnection.HTTP_NOT_MODIFIED)
+             {
+                URL base = http.getURL();
+                String loc = http.getHeaderField("Location");
+                URL target = null;
+                if (loc != null)
+                {
+                   target = new URL(base, loc);
+                }
+                http.disconnect();
+                // Redirection should be allowed only for HTTP and HTTPS
+                // and should be limited to 5 redirections at most.
+                if (target == null || !(target.getProtocol().equals("http")
+                   || target.getProtocol().equals("https"))
+                   || redirects >= 5)
+                {
+                   throw new SecurityException("illegal URL redirect");
+                }
+                redir = true;
+                c = target.openConnection();
+                redirects++;
+             }
+          }
+       } while (redir);
+       return in;
     }
 }
