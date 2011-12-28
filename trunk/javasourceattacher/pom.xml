@@ -357,6 +357,10 @@
           <webAppSourceDirectory>${basedir}/war</webAppSourceDirectory>
           <scanIntervalSeconds>10</scanIntervalSeconds>
           <overrideWebXml>src/main/config/jetty/web.xml</overrideWebXml>
+          <classesDirectory>${basedir}/war/WEB-INF/classes</classesDirectory>
+          <scanTargets>
+            <scanTarget>${basedir}/war/WEB-INF</scanTarget>
+          </scanTargets>
           <connectors>
             <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
               <port>8081</port>
@@ -366,6 +370,7 @@
         </configuration>
       </plugin>
 
+
       <!-- Generate Eclipse project files -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -373,7 +378,6 @@
         <version>2.6</version>
         <configuration>
           <excludes><!-- GAE_CONTAINER already have these jars -->
-          <!--
             <exclude>org.datanucleus:datanucleus-core</exclude>
             <exclude>org.datanucleus:datanucleus-jpa</exclude>
             <exclude>com.google.appengine:datanucleus-appengine</exclude>
@@ -383,8 +387,10 @@
             <exclude>org.apache.geronimo.specs:geronimo-jpa_3.0_spec</exclude>
             <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
             <exclude>javax.jdo:jdo2-api</exclude>
-            <exclude>com.google.appengine:appengine-api</exclude>
-             -->
+            <exclude>com.google.appengine:appengine-api-1.0-sdk</exclude>
+            <exclude>com.google.appengine:appengine-api-labs</exclude>
+            <exclude>com.google.appengine:appengine-jsr107cache</exclude>
+            <exclude>net.sf.jsr107cache:jsr107cache</exclude>
           </excludes>
           <downloadSources>true</downloadSources>
           <buildOutputDirectory>${basedir}/war/WEB-INF/classes</buildOutputDirectory>
