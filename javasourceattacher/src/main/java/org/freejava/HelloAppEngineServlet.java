@@ -24,11 +24,12 @@ public class HelloAppEngineServlet extends HttpServlet {
 		LOGGER.info("Saying hello using log4j.");
 		ApplicationContext context = WebApplicationContextUtils.getWebApplicationContext(getServletContext());
 		BundleManager em = (BundleManager) context.getBean("bundleManagerImpl");
-		//Bundle bundle = new Bundle() ;
-		//bundle.setBinMd5("1234");
-		//bundle.setSourceMd5("src1234");
-		//bundle.setSourceUrl("srcurl");
-		//em.add(bundle);
+		Bundle bundle = new Bundle() ;
+		bundle.setBinMd5("1234");
+		bundle.setSourceMd5("src123456");
+		bundle.setSourceUrl("srcurl");
+
+		em.add(bundle);
 
 		for (Bundle e : em.getAll()) System.out.println(e.getSourceMd5());
 		for (Bundle e : em.findByBinMd5("1234")) System.out.println(e.getSourceUrl());
