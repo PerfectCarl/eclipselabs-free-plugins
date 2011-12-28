@@ -26,7 +26,7 @@ public class HelloAppEngineServlet extends HttpServlet {
 		BundleManager em = (BundleManager) context.getBean("bundleManagerImpl");
 		Bundle bundle = new Bundle() ;
 		bundle.setBinMd5("1234");
-		bundle.setSourceMd5("src123456");
+		bundle.setSourceMd5("src1234567");
 		bundle.setSourceUrl("srcurl");
 
 		em.add(bundle);
