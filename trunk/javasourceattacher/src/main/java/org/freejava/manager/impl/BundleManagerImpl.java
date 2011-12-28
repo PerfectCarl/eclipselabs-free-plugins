@@ -1,10 +1,10 @@
-package org.example.manager.impl;
+package org.freejava.manager.impl;
 
 import java.util.List;
 
-import org.example.dao.BundleDao;
-import org.example.manager.BundleManager;
-import org.example.model.Bundle;
+import org.freejava.dao.BundleDao;
+import org.freejava.manager.BundleManager;
+import org.freejava.model.Bundle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

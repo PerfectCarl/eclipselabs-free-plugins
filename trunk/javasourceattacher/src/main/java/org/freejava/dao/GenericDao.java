@@ -1,4 +1,4 @@
-package org.example.dao;
+package org.freejava.dao;
 
 import java.io.Serializable;
 import java.util.List;

@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.example</groupId>
+  <groupId>org.freejava</groupId>
   <artifactId>javasourceattacher</artifactId>
   <packaging>war</packaging>
   <version>1.0-SNAPSHOT</version>
@@ -50,7 +50,7 @@
     </dependency>
 
     <!--
-      Data persistence APIs: JPA and JDO. 
+      Data persistence APIs: JPA and JDO.
     -->
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
@@ -105,10 +105,10 @@
       <version>1.0.10</version>
       <scope>runtime</scope>
     </dependency>
-	
+
 
     <!--
-      JSR 107 Cache 
+      JSR 107 Cache
     -->
     <dependency>
       <groupId>com.google.appengine</groupId>
@@ -121,7 +121,7 @@
 	  <artifactId>jsr107cache</artifactId>
 	  <version>1.1</version>
 	</dependency>
-	
+
     <!-- Below two dependencies + LocalApiProxyServletFilter  are used to simulate GAE dev env on Jetty server  -->
 	<!--
     <dependency>
@@ -369,6 +369,7 @@
         <version>2.6</version>
         <configuration>
           <excludes><!-- GAE_CONTAINER already have these jars -->
+          <!--
             <exclude>org.datanucleus:datanucleus-core</exclude>
             <exclude>org.datanucleus:datanucleus-jpa</exclude>
             <exclude>com.google.appengine:datanucleus-appengine</exclude>
@@ -379,6 +380,7 @@
             <exclude>org.apache.geronimo.specs:geronimo-jta_1.1_spec</exclude>
             <exclude>javax.jdo:jdo2-api</exclude>
             <exclude>com.google.appengine:appengine-api</exclude>
+             -->
           </excludes>
           <downloadSources>true</downloadSources>
           <buildOutputDirectory>${basedir}/war/WEB-INF/classes</buildOutputDirectory>

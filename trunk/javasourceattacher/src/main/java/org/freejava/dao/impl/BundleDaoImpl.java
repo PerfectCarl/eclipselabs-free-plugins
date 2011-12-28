@@ -1,9 +1,9 @@
-package org.example.dao.impl;
+package org.freejava.dao.impl;
 
 import java.util.List;
 
-import org.example.dao.BundleDao;
-import org.example.model.Bundle;
+import org.freejava.dao.BundleDao;
+import org.freejava.model.Bundle;
 import org.springframework.stereotype.Repository;
 
 @Repository

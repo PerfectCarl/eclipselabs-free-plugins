@@ -18,7 +18,7 @@
 
   <servlet>
     <servlet-name>hello</servlet-name>
-    <servlet-class>org.example.HelloAppEngineServlet</servlet-class>
+    <servlet-class>org.freejava.HelloAppEngineServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>
