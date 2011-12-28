@@ -8,6 +8,7 @@
   <persistence-unit name="pu">
     <provider>org.datanucleus.store.appengine.jpa.DatastorePersistenceProvider</provider>
     <class>org.freejava.model.Bundle</class>
+    <class>org.freejava.model.Location</class>
     <properties>
       <property name="datanucleus.ConnectionURL" value="appengine" />
     </properties>

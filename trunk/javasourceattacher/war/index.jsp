@@ -35,9 +35,6 @@ $.getJSON('${pageContext.request.contextPath}/rest/bundles', function(data) {
 	console.dir(data)	  
 });	
 
-$.getJSON('${pageContext.request.contextPath}/rest/bundles', {sourceMd5 : "src123456"}, function(data) {
-	console.dir(data)	  
-});	
 
 
 });

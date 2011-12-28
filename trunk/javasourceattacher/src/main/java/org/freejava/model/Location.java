@@ -6,13 +6,13 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
-public class Bundle {
+public class Location {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String binMd5;
-    private String sourceMd5;
+    private String md5;
+    private String url;
 
     // Accessors for the fields.  JPA doesn't use these, but your application does.
 
@@ -22,16 +22,19 @@ public class Bundle {
     public void setId(Long id) {
         this.id = id;
     }
-	public String getBinMd5() {
-		return binMd5;
+
+	public String getMd5() {
+		return md5;
 	}
-	public void setBinMd5(String binMd5) {
-		this.binMd5 = binMd5;
+	public void setMd5(String md5) {
+		this.md5 = md5;
 	}
-	public String getSourceMd5() {
-		return sourceMd5;
+
+	public String getUrl() {
+		return url;
 	}
-	public void setSourceMd5(String sourceMd5) {
-		this.sourceMd5 = sourceMd5;
+	public void setUrl(String url) {
+		this.url = url;
 	}
+
 }
