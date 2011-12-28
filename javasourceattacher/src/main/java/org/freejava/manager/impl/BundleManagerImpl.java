@@ -1,6 +1,7 @@
 package org.freejava.manager.impl;
 
 import java.util.List;
+import java.util.Map;
 
 import org.freejava.dao.BundleDao;
 import org.freejava.manager.BundleManager;
@@ -24,15 +25,15 @@ public class BundleManagerImpl implements BundleManager {
 		bundleDao.persist(bundle);
 	}
 
+
 	@Override
-	public List<Bundle> getAll() {
-		List<Bundle> result = bundleDao.findAll();
-		return result;
+	public Bundle findById(long id) throws Exception {
+		return bundleDao.findById(id);
 	}
 
 	@Override
-	public List<Bundle> findByBinMd5(String binMd5) {
-		List<Bundle> result = bundleDao.findByBinMd5(binMd5);
+	public List<Bundle> findByConditions(Map<String, Object[]> criteriaValues) {
+		List<Bundle> result = bundleDao.findByCriteria(criteriaValues, 0, 10);
 		return result;
 	}
 

@@ -31,8 +31,8 @@ public class HelloAppEngineServlet extends HttpServlet {
 
 		em.add(bundle);
 
-		for (Bundle e : em.getAll()) System.out.println(e.getSourceMd5());
-		for (Bundle e : em.findByBinMd5("1234")) System.out.println(e.getSourceUrl());
+		//for (Bundle e : em.getAll()) System.out.println(e.getId());
+		//for (Bundle e : em.findByBinMd5("1234")) System.out.println(e.getSourceUrl());
 		resp.getWriter().println("Hello, world");
 	}
 }

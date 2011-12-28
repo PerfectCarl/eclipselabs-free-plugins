@@ -2,6 +2,7 @@ package org.freejava.dao;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A generic DAO interface.
@@ -19,6 +20,8 @@ public interface GenericDao<T, ID extends Serializable> {
      * @throws Exception if any error happen
      */
     T findById(ID id) throws Exception;
+
+    List<T> findByCriteria(Map<String, Object[]> criteriaValues, int startPosition, int maxResult);
 
     List<T> findAll();
 

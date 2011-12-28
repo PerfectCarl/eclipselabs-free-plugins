@@ -1,11 +1,12 @@
 package org.freejava.manager;
 
 import java.util.List;
+import java.util.Map;
 
 import org.freejava.model.Bundle;
 
 public interface BundleManager {
 	void add(Bundle bundle);
-	List<Bundle> getAll();
-	List<Bundle> findByBinMd5(String binMd5);
+	Bundle findById(long id) throws Exception;
+	List<Bundle> findByConditions(Map<String, Object[]> criteriaValues);
 }

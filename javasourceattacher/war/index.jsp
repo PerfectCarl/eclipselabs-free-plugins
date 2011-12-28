@@ -9,7 +9,7 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-
+	<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
     <title>Hello App Engine</title>
   </head>
 
@@ -24,5 +24,25 @@
         <td><a href="helloappengine">HelloAppEngineServlet</a></td>
       </tr>
     </table>
+    <script type="text/javascript">
+$(function(){
+
+$.getJSON('${pageContext.request.contextPath}/rest/bundles/1', function(data) {
+		console.dir(data)	  
+});	
+
+$.getJSON('${pageContext.request.contextPath}/rest/bundles', function(data) {
+	console.dir(data)	  
+});	
+
+$.getJSON('${pageContext.request.contextPath}/rest/bundles', {sourceMd5 : "src123456"}, function(data) {
+	console.dir(data)	  
+});	
+
+
+});
+
+
+    </script>
   </body>
 </html>
