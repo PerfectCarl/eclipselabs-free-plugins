@@ -30,7 +30,7 @@ public interface GenericDao<T, ID extends Serializable> {
      *
      * @param object the instance to save in the database
      */
-    public void persist(T object);
+    public T persist(T object);
 
     /**
      * Remove <code>object</code> from the database.

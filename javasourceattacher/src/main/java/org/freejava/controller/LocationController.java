@@ -22,6 +22,17 @@ public class LocationController {
 	@Autowired
 	private LocationManager manager;
 
+	@RequestMapping(method = RequestMethod.POST)
+	@ResponseBody
+	public Location create(ServletRequest request) {
+		String md5 = request.getParameter("md5");
+		String url = request.getParameter("url");
+		Location location = new Location();
+		location.setMd5(md5);
+		location.setUrl(url);
+		location = manager.add(location);
+		return location;
+	}
 
 	@RequestMapping(method = RequestMethod.GET)
 	@ResponseBody

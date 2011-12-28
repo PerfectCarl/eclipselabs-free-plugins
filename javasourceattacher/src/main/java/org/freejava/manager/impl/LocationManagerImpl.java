@@ -21,8 +21,8 @@ public class LocationManagerImpl implements LocationManager {
     }
 
 	@Override
-	public void add(Location location) {
-		locationDao.persist(location);
+	public Location add(Location location) {
+		return locationDao.persist(location);
 	}
 
 
