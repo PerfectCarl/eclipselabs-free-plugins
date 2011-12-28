@@ -55,8 +55,7 @@ public abstract class GenericDaoImpl <T, ID extends Serializable>
             int startPosition, int maxResult) {
         List<T> result;
 
-        String ejbqlString = "select o from " + getPersistentClass().getName()
-                + " o ";
+        String ejbqlString = "select o from " + getPersistentClass().getName() + " o ";
         List<Object> paramValues = new ArrayList<Object>();
 
         if (!criteriaValues.isEmpty()) {
@@ -89,6 +88,8 @@ public abstract class GenericDaoImpl <T, ID extends Serializable>
         query.setMaxResults(maxResult);
 
         result = query.getResultList();
+
+        result.size();
 
         return result;
     }
