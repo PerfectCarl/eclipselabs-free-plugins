@@ -22,6 +22,17 @@ public class BundleController {
 	@Autowired
 	private BundleManager manager;
 
+	@RequestMapping(method = RequestMethod.POST)
+	@ResponseBody
+	public Bundle create(ServletRequest request) {
+		String binMd5 = request.getParameter("binMd5");
+		String sourceMd5 = request.getParameter("sourceMd5");
+		Bundle bundle = new Bundle();
+		bundle.setBinMd5(binMd5);
+		bundle.setSourceMd5(sourceMd5);
+		bundle = manager.add(bundle);
+		return bundle;
+	}
 
 	@RequestMapping(method = RequestMethod.GET)
 	@ResponseBody
@@ -45,7 +56,7 @@ public class BundleController {
 
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
 	@ResponseBody
-	public Bundle findBundle(@PathVariable("id") long id) throws Exception {
+	public Bundle id(@PathVariable("id") long id) throws Exception {
 		return manager.findById(id);
 	}
 

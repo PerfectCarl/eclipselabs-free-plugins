@@ -102,8 +102,10 @@ public abstract class GenericDaoImpl <T, ID extends Serializable>
         return results;
     }
 
-    public void persist(T object) {
+    public T persist(T object) {
         entityManager.persist(object);
+        entityManager.flush();
+        return object;
     }
 
     public void flush() {

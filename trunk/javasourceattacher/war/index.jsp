@@ -14,32 +14,66 @@
   </head>
 
   <body>
-    <h1>Hello App Engine!</h1>
 
+    
+    <h1>Bundles:</h1>
+    <form action="${pageContext.request.contextPath}/rest/bundles" method="post">
     <table>
       <tr>
-        <td colspan="2" style="font-weight:bold;">Available Servlets:</td>
+        <td>binMd5:</td>
+        <td><input type="text" name="binMd5"></td>
       </tr>
       <tr>
-        <td><a href="helloappengine">HelloAppEngineServlet</a></td>
+        <td>sourceMd5:</td>
+        <td><input type="text" name="sourceMd5"></td>
+      </tr>
+      <tr>
+        <td><input type=submit value=Submit></td>
       </tr>
     </table>
+    </form>
+    
+    <h1>Locations:</h1>
+    <form action="${pageContext.request.contextPath}/rest/locations" method="post">
+    <table>
+      <tr>
+        <td>md5:</td>
+        <td><input type="text" name="md5"></td>
+      </tr>
+      <tr>
+        <td>url:</td>
+        <td><input type="text" name="url"></td>
+      </tr>
+      <tr>
+        <td><input type=submit value=Submit></td>
+      </tr>
+    </table>
+    </form>
+    
+    
     <script type="text/javascript">
 $(function(){
 
-$.getJSON('${pageContext.request.contextPath}/rest/bundles/1', function(data) {
+	$.getJSON('${pageContext.request.contextPath}/rest/bundles/1', function(data) {
+			console.dir(data)	  
+	});	
+	
+	$.getJSON('${pageContext.request.contextPath}/rest/bundles', function(data) {
 		console.dir(data)	  
-});	
+	});	
 
-$.getJSON('${pageContext.request.contextPath}/rest/bundles', function(data) {
-	console.dir(data)	  
-});	
-
+	$.getJSON('${pageContext.request.contextPath}/rest/locations/4', function(data) {
+		console.dir(data)	  
+	});	
+	
+	$.getJSON('${pageContext.request.contextPath}/rest/locations', function(data) {
+		console.dir(data)	  
+	});	
 
 
 });
 
 
-    </script>
+    </script>    
   </body>
 </html>

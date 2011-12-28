@@ -21,8 +21,8 @@ public class BundleManagerImpl implements BundleManager {
     }
 
 	@Override
-	public void add(Bundle bundle) {
-		bundleDao.persist(bundle);
+	public Bundle add(Bundle bundle) {
+		return bundleDao.persist(bundle);
 	}
 
 
