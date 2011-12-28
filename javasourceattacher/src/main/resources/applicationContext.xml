@@ -45,11 +45,11 @@
     <!--
       Autodetected POJOs labeled with the @Controller/@Service/@Repositoty/@Component annotation.
     -->
-    <context:component-scan base-package="org.example" />
+    <context:component-scan base-package="org.freejava" />
 
-    <bean id="methodLoggingAdvice" class="org.example.util.MethodLoggingAdvice"/>
+    <bean id="methodLoggingAdvice" class="org.freejava.util.MethodLoggingAdvice"/>
     <aop:config>
-      <aop:advisor advice-ref="methodLoggingAdvice" pointcut="execution(* org.example.manager.*.*(..))" order="1"/>
+      <aop:advisor advice-ref="methodLoggingAdvice" pointcut="execution(* org.freejava.manager.*.*(..))" order="1"/>
     </aop:config>
 
 </beans>

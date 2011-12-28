@@ -1,4 +1,4 @@
-package org.example.dao.impl;
+package org.freejava.dao.impl;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
@@ -7,7 +7,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import org.example.dao.GenericDao;
+import org.freejava.dao.GenericDao;
 
 /**
  * A Generic DAO class.

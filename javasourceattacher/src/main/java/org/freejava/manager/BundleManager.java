@@ -1,8 +1,8 @@
-package org.example.manager;
+package org.freejava.manager;
 
 import java.util.List;
 
-import org.example.model.Bundle;
+import org.freejava.model.Bundle;
 
 public interface BundleManager {
 	void add(Bundle bundle);

@@ -1,4 +1,4 @@
-package org.example;
+package org.freejava;
 
 import java.io.IOException;
 
@@ -7,8 +7,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
-import org.example.manager.BundleManager;
-import org.example.model.Bundle;
+import org.freejava.manager.BundleManager;
+import org.freejava.model.Bundle;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 

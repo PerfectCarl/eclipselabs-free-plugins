@@ -1,4 +1,4 @@
-package org.example.util;
+package org.freejava.util;
 
 import java.lang.reflect.Method;
 
