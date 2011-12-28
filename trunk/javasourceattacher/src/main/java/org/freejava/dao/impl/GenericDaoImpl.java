@@ -2,10 +2,13 @@ package org.freejava.dao.impl;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 
 import org.freejava.dao.GenericDao;
 
@@ -45,6 +48,49 @@ public abstract class GenericDaoImpl <T, ID extends Serializable>
 
     public T findById(ID id) {
         return entityManager.find(getPersistentClass(), id);
+    }
+
+
+    public List<T> findByCriteria(Map<String, Object[]> criteriaValues,
+            int startPosition, int maxResult) {
+        List<T> result;
+
+        String ejbqlString = "select o from " + getPersistentClass().getName()
+                + " o ";
+        List<Object> paramValues = new ArrayList<Object>();
+
+        if (!criteriaValues.isEmpty()) {
+            String criteria = "";
+            int index = 1;
+            for (Map.Entry<String, Object[]> entry : criteriaValues.entrySet()) {
+                String propertyName = entry.getKey();
+                Object[] values = entry.getValue();
+
+                String criterion = propertyName + " = ?" + index++;
+                paramValues.add(values[0]);
+                for (int i = 1; i < values.length; i++) {
+                    criterion += " or " + propertyName + " = ?" + index++;
+                    paramValues.add(values[i]);
+                }
+                criterion = " ( " + criterion + " ) ";
+
+                if (!"".equals(criteria)) {
+                    criteria += " and ";
+                }
+                criteria += criterion;
+            }
+            ejbqlString += " where " + criteria;
+        }
+        Query query = entityManager.createQuery(ejbqlString);
+        for (int i = 0; i < paramValues.size(); i++) {
+            query.setParameter(i + 1, paramValues.get(i));
+        }
+        query.setFirstResult(startPosition);
+        query.setMaxResults(maxResult);
+
+        result = query.getResultList();
+
+        return result;
     }
 
     @SuppressWarnings("unchecked")
