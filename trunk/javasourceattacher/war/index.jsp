@@ -15,30 +15,34 @@
 
   <body>
 
-    
+
     <h1>Bundles:</h1>
     <form action="${pageContext.request.contextPath}/rest/bundles" method="post">
     <table>
       <tr>
-        <td>binMd5:</td>
-        <td><input type="text" name="binMd5"></td>
+        <td>md5:</td><td><input type="text" name="md5"></td>
       </tr>
       <tr>
-        <td>sourceMd5:</td>
-        <td><input type="text" name="sourceMd5"></td>
+        <td>sha1:</td><td><input type="text" name="sha1"></td>
+      </tr>
+      <tr>
+        <td>md5First1024Bytes:</td><td><input type="text" name="md5First1024Bytes"></td>
+      </tr>
+      <tr>
+        <td>fileSize:</td><td><input type="text" name="fileSize"></td>
       </tr>
       <tr>
         <td><input type=submit value=Submit></td>
       </tr>
     </table>
     </form>
-    
+
     <h1>Locations:</h1>
     <form action="${pageContext.request.contextPath}/rest/locations" method="post">
     <table>
       <tr>
-        <td>md5:</td>
-        <td><input type="text" name="md5"></td>
+        <td>bundleId:</td>
+        <td><input type="text" name="bundleId"></td>
       </tr>
       <tr>
         <td>url:</td>
@@ -62,7 +66,7 @@ $(function(){
 		console.dir(data)	  
 	});	
 
-	$.getJSON('${pageContext.request.contextPath}/rest/locations/4', function(data) {
+	$.getJSON('${pageContext.request.contextPath}/rest/locations/2', function(data) {
 		console.dir(data)	  
 	});	
 	

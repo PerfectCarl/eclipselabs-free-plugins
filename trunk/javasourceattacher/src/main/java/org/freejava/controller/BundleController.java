@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.servlet.ServletRequest;
 
+import org.apache.commons.lang.StringUtils;
 import org.freejava.manager.BundleManager;
 import org.freejava.model.Bundle;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +26,21 @@ public class BundleController {
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
 	public Bundle create(ServletRequest request) {
-		String binMd5 = request.getParameter("binMd5");
-		String sourceMd5 = request.getParameter("sourceMd5");
+		String md5 = request.getParameter("md5");
+		String sha1 = request.getParameter("sha1");
+		String md5First1024Bytes = request.getParameter("md5First1024Bytes");
+		String fileSize = request.getParameter("fileSize");
+		String sourceId = request.getParameter("sourceId");
+
 		Bundle bundle = new Bundle();
-		bundle.setBinMd5(binMd5);
-		bundle.setSourceMd5(sourceMd5);
+		bundle.setMd5(md5);
+		bundle.setSha1(sha1);
+		bundle.setMd5First1024Bytes(md5First1024Bytes);
+		if (StringUtils.isNotBlank(fileSize))
+			bundle.setFileSize(Long.parseLong(fileSize));
+		if (StringUtils.isNotBlank(sourceId))
+			bundle.setSourceId(Long.parseLong(sourceId));
+
 		bundle = manager.add(bundle);
 		return bundle;
 	}
@@ -40,16 +51,28 @@ public class BundleController {
 		Map<String, Object[]> criteriaValues = new Hashtable<String, Object[]>();
 
 	    String id = request.getParameter("id");
-		if (id != null)
+		if (StringUtils.isNotBlank(id))
 			criteriaValues.put("id", new Object[] {Long.parseLong(id)});
 
-		String binMd5 = request.getParameter("binMd5");
-		if (binMd5 != null)
-			criteriaValues.put("binMd5", new Object[] {binMd5});
+		String md5 = request.getParameter("md5");
+		if (StringUtils.isNotBlank(md5))
+			criteriaValues.put("md5", new Object[] {md5});
 
-		String sourceMd5 = request.getParameter("sourceMd5");
-		if (sourceMd5 != null)
-			criteriaValues.put("sourceMd5", new Object[] {sourceMd5});
+		String sha1 = request.getParameter("sha1");
+		if (StringUtils.isNotBlank(sha1))
+			criteriaValues.put("sha1", new Object[] {sha1});
+
+		String md5First1024Bytes = request.getParameter("md5First1024Bytes");
+		if (StringUtils.isNotBlank(md5First1024Bytes))
+			criteriaValues.put("md5First1024Bytes", new Object[] {md5First1024Bytes});
+
+		String fileSize = request.getParameter("fileSize");
+		if (StringUtils.isNotBlank(fileSize))
+			criteriaValues.put("fileSize", new Object[] {fileSize});
+
+		String sourceId = request.getParameter("sourceId");
+		if (StringUtils.isNotBlank(sourceId))
+			criteriaValues.put("sourceId", new Object[] {sourceId});
 
 		return manager.findByConditions(criteriaValues);
 	}

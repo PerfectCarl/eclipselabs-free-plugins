@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.servlet.ServletRequest;
 
+import org.apache.commons.lang.StringUtils;
 import org.freejava.manager.LocationManager;
 import org.freejava.model.Location;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +26,10 @@ public class LocationController {
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
 	public Location create(ServletRequest request) {
-		String md5 = request.getParameter("md5");
+		String bundleId = request.getParameter("bundleId");
 		String url = request.getParameter("url");
 		Location location = new Location();
-		location.setMd5(md5);
+		location.setBundleId(Long.parseLong(bundleId));
 		location.setUrl(url);
 		location = manager.add(location);
 		return location;
@@ -40,15 +41,15 @@ public class LocationController {
 		Map<String, Object[]> criteriaValues = new Hashtable<String, Object[]>();
 
 	    String id = request.getParameter("id");
-		if (id != null)
+		if (StringUtils.isNotBlank(id))
 			criteriaValues.put("id", new Object[] {Long.parseLong(id)});
 
-		String md5 = request.getParameter("md5");
-		if (md5 != null)
-			criteriaValues.put("md5", new Object[] {md5});
+		String bundleId = request.getParameter("bundleId");
+		if (StringUtils.isNotBlank(bundleId))
+			criteriaValues.put("bundleId", new Object[] {bundleId});
 
 		String url = request.getParameter("url");
-		if (url != null)
+		if (StringUtils.isNotBlank(url))
 			criteriaValues.put("url", new Object[] {url});
 
 		return manager.findByConditions(criteriaValues);
