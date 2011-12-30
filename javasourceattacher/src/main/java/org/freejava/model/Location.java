@@ -11,8 +11,8 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String md5;
-    private String url;
+    private Long bundleId; // ID of corresponding bundle
+    private String url; // URl where the bundle can be downloaded
 
     // Accessors for the fields.  JPA doesn't use these, but your application does.
 
@@ -23,11 +23,11 @@ public class Location {
         this.id = id;
     }
 
-	public String getMd5() {
-		return md5;
+	public Long getBundleId() {
+		return bundleId;
 	}
-	public void setMd5(String md5) {
-		this.md5 = md5;
+	public void setBundleId(Long bundleId) {
+		this.bundleId = bundleId;
 	}
 
 	public String getUrl() {
