@@ -1,8 +1,12 @@
 package sample.startup;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -15,19 +19,30 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.impl.client.DefaultHttpClient;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
 public class Categorize {
 
 	/**
 	 * @param args
-	 * @throws IOException
+	 * @throws Exception
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 
 		List<String> lines = Files.readLines(new File("D:\\projects\\free-plugins\\javasourceattachercrawler\\urls.txt"), Charset.forName("UTF-8"));
 
@@ -41,18 +56,218 @@ public class Categorize {
 
 		List<String> sortedBins = sortBinBySize(bin2Source, sizes);
 
-		System.out.println(sortedBins);
+		Map<String, Map<String, Object>> infos = getInfo(bin2Source, sortedBins, urls);
+
+	    System.out.println(sortedBins);
 
 
 	}
 
-	private static List<String> sortBinBySize(Map<String, String> bin2Source,
+	private static Map<String, Map<String, Object>> getInfo(Map<String, String> bin2Source, List<String> sortedBins, List<String> urls) throws Exception {
+		Map<String, Map<String, Object>> result = new HashMap<String, Map<String, Object>>();
+		DefaultHttpClient httpclient = new DefaultHttpClient();
+		for (int i = 0; i < sortedBins.size(); i++) {
+			String bin = sortedBins.get(i);
+			String src = bin2Source.get(bin);
+
+System.out.println("src:"+src+";     bin:"+bin );
+
+			Map<String, Object> info = result.get(src);
+	        if (info == null) {
+	        	info = getFileInfo(httpclient, src, urls);
+	        	result.put(src, info);
+	        }
+
+	        boolean java = false;
+	        List<String> javanames = (List<String>) info.get("names");
+	        for (String name : javanames) {
+	        	if (name.endsWith(".java")) {
+	        		java = true;
+	        		break;
+	        	}
+	        }
+
+	        if (!java) {
+	        	continue;
+	        }
+
+
+        	// continue with bin file
+        	if (bin.endsWith(".jar")) {
+	        	info = getFileInfo(httpclient, src, urls);
+		        List<String> classnames = (List<String>) info.get("names");
+		        boolean valid = isSource(javanames, classnames);
+		        if (valid) {
+		        	info.put("src", src);
+		        	result.put(bin, info);
+		        }
+        	} else {
+        		File file = download(httpclient, bin);
+        		ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
+        		ZipEntry entry;
+        		do {
+        			entry = zis.getNextEntry();
+        			if (entry == null) break;
+        			if (entry.getName().endsWith(".jar")) {
+
+        				File temp = File.createTempFile("tmp", ".jar");
+        			    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
+        			    IOUtils.copy(zis, fos);
+        				IOUtils.closeQuietly(fos);
+
+        				List<String> classnames = new ArrayList<String>();
+        				InputStream is2 = Files.newInputStreamSupplier(temp).getInput();
+        				ZipInputStream zis2 = new ZipInputStream(is2);
+        				ZipEntry entry2;
+        				do {
+        					entry2 = zis2.getNextEntry();
+        					if (entry2 == null) break;
+        					classnames.add(entry2.getName());
+        				} while (true);
+        				IOUtils.closeQuietly(zis2);
+        				IOUtils.closeQuietly(is2);
+
+        				temp.delete();
+
+        		        boolean valid = isSource(javanames, classnames);
+        		        if (valid) {
+        		        	info.put("src", src);
+        		        	result.put(bin, info);
+        		        }
+        			}
+
+        		} while (true);
+        		file.delete();
+        	}
+
+
+			System.out.println((int)((double)i*100/sortedBins.size()));
+		}
+
+		return result;
+	}
+
+	private static File download(DefaultHttpClient httpclient, String bin) throws Exception {
+		HttpResponse response = httpclient.execute(new HttpGet(bin));
+		InputStream is = response.getEntity().getContent();
+	    File temp = File.createTempFile("tmp", ".zip");
+	    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
+	    IOUtils.copy(is, fos);
+		IOUtils.closeQuietly(fos);
+		IOUtils.closeQuietly(is);
+		return null;
+	}
+
+	private static boolean isSource(List<String> javanames, List<String> classnames) {
+		Set<String> javanames2 = new HashSet<String>();
+		for (String javaname : javanames) {
+			String name = FilenameUtils.getName(javaname);
+			if (name.endsWith(".java")) {
+				javanames2.add(name.substring(0, name.length() - ".java".length()));
+			}
+		}
+		Set<String> classnames2 = new HashSet<String>();
+		for (String classname : classnames) {
+			String name = FilenameUtils.getName(classname);
+			if (name.endsWith(".class")) {
+				classnames2.add(name.substring(0, name.length() - ".class".length()));
+			}
+		}
+		int commonCount = Sets.intersection(javanames2, classnames2).size();
+
+		return commonCount > 10;
+	}
+
+	private static Map<String, Object> getFileInfo(DefaultHttpClient httpclient, String url, List<String> urls) throws Exception {
+
+		String md5Str;
+		String sha1Str;
+		long size;
+
+		List<String> names = getFileNames(httpclient, url);
+		System.out.println(names);
+
+
+		if (urls.contains(url + ".md5") && urls.contains(url + ".sha1")) {
+			// fast way
+			System.out.println("FAST:" + url);
+
+			HttpResponse response = httpclient.execute(new HttpHead(url));
+			size = Long.parseLong(response.getFirstHeader("Content-Length").getValue());
+
+			response = httpclient.execute(new HttpGet(url + ".md5"));
+			InputStream is2 = response.getEntity().getContent();
+			md5Str = StringUtils.split(StringUtils.trimToEmpty(IOUtils.toString(is2)))[0];
+			IOUtils.closeQuietly(is2);
+
+			response = httpclient.execute(new HttpGet(url + ".sha1"));
+			InputStream is3 = response.getEntity().getContent();
+			sha1Str = StringUtils.split(StringUtils.trimToEmpty(IOUtils.toString(is3)))[0];
+			IOUtils.closeQuietly(is3);
+
+		} else {
+			// slow way
+			System.out.println("SLOW:" + url);
+
+			HttpResponse response = httpclient.execute(new HttpGet(url));
+			size = response.getEntity().getContentLength();
+
+			InputStream is = response.getEntity().getContent();
+		    MessageDigest md5 = MessageDigest.getInstance("MD5");
+		    MessageDigest sha1 = MessageDigest.getInstance("SHA");
+		    long readTotal = 0;
+		    byte[] buffer = new byte[2048];
+		    int read = is.read(buffer, 0, 2048);
+		    while (read > -1) {
+		    	readTotal += read;
+		        md5.update(buffer, 0, read);
+		        sha1.update(buffer, 0, read);
+		        read = is.read(buffer, 0, 2048);
+		    }
+		    md5Str = Hex.encodeHexString(md5.digest());
+		    sha1Str = Hex.encodeHexString(sha1.digest());
+		    if (readTotal != size) throw new IllegalStateException();
+		}
+
+
+		Map<String, Object> info = new HashMap<String, Object>();
+	    info.put("md5", md5Str);
+	    info.put("sha1", sha1Str);
+	    info.put("size", String.valueOf(size));
+	    info.put("names", names);
+
+		return info;
+	}
+
+	private static List<String> getFileNames(DefaultHttpClient httpclient,
+			String url) throws IOException, ClientProtocolException {
+		List<String> names = new ArrayList<String>();
+		HttpGet request = new HttpGet(url);
+		HttpResponse response = httpclient.execute(request);
+		HttpEntity entity = response.getEntity();
+		InputStream is = entity.getContent();
+		ZipInputStream zis = new ZipInputStream(is);
+		ZipEntry entry;
+		do {
+			entry = zis.getNextEntry();
+			if (entry == null) break;
+			names.add(entry.getName());
+			//System.out.println(entry.getName());
+		} while (true);
+		IOUtils.closeQuietly(zis);
+		IOUtils.closeQuietly(is);
+		request.abort();
+		return names;
+	}
+
+	private static List<String> sortBinBySize(
+			final Map<String, String> bin2Source,
 			final Map<String, Double> sizes) {
 		List<String> sortedBins = new ArrayList<String>(bin2Source.keySet());
 		Collections.sort(sortedBins, new Comparator<String>() {
 			@Override
 			public int compare(String o1, String o2) {
-				double diff = (sizes.get(o1) - sizes.get(o2));
+				double diff = (sizes.get(o1) + sizes.get(bin2Source.get(o1)) - sizes.get(o2) - sizes.get(bin2Source.get(o2)));
 				return (Math.abs(diff) < 0.1) ? 0 : ((diff > 0) ? 1 : -1);
 			}
 
