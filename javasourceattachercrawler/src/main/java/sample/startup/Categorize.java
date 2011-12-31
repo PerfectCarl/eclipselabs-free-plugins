@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,15 +31,49 @@ public class Categorize {
 
 		List<String> lines = Files.readLines(new File("D:\\projects\\free-plugins\\javasourceattachercrawler\\urls.txt"), Charset.forName("UTF-8"));
 
-		lines = loadURLs(lines);
+		List<String> urls = loadURLs(lines);
 
-		Map<String, List<String>> groups = buildGroups(lines);
+		Map<String, List<String>> groups = buildGroups(urls);
 
-		Map<String, Map<String, String>> groupsBin2Source = buildGroupsBin2Source(groups, new File("D:\\projects\\free-plugins\\javasourceattachercrawler\\sources.txt"));
+		Map<String, String> bin2Source = buildGroupsBin2Source(groups);
+
+		final Map<String, Double> sizes = loadURLSize(lines);
+
+		List<String> sortedBins = sortBinBySize(bin2Source, sizes);
+
+		System.out.println(sortedBins);
+
 
 	}
 
-	private static Map<String, Map<String, String>> buildGroupsBin2Source(Map<String, List<String>> groups, File file) throws IOException {
+	private static List<String> sortBinBySize(Map<String, String> bin2Source,
+			final Map<String, Double> sizes) {
+		List<String> sortedBins = new ArrayList<String>(bin2Source.keySet());
+		Collections.sort(sortedBins, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				double diff = (sizes.get(o1) - sizes.get(o2));
+				return (Math.abs(diff) < 0.1) ? 0 : ((diff > 0) ? 1 : -1);
+			}
+
+		});
+		return sortedBins;
+	}
+
+	private static Map<String, Double> loadURLSize(List<String> lines) {
+		Map<String, Double> result = new HashMap<String, Double>();
+		for (String line : lines) {
+			if (StringUtils.isNotEmpty(line)) {
+				String[] array = StringUtils.split(StringUtils.trimToEmpty(line), " ");
+				String url = StringUtils.trimToEmpty(array[0]);
+				Double size = Double.parseDouble(StringUtils.trimToEmpty(array[1]));
+				result.put(url, size);
+			}
+		}
+		return result;
+	}
+
+	private static Map<String, String> buildGroupsBin2Source(Map<String, List<String>> groups) throws IOException {
 		Map<String, Map<String, String>> groupsBin2Source = new HashMap<String, Map<String, String>>();
 
 		Set<String> groupNames = new TreeSet<String>();
@@ -50,20 +87,18 @@ public class Categorize {
 			Map<String, String> bin2Source = buildBin2SourceMap(group);
 			if (!bin2Source.isEmpty()) {
 				groupsBin2Source.put(groupName, bin2Source);
-
-				String output = "\ngroupName:" + groupName;
-				output += "\nin:" + group;
-				output += "\nout:" + bin2Source + "\n";
-				System.out.println(output);
-				if (file != null) Files.append(output, file, Charset.forName("UTF-8"));
-
 				bins.addAll(bin2Source.keySet());
 			}
 		}
 
-		System.out.println("\nBinFiles:" + bins.size());
-
-		return groupsBin2Source;
+		Map<String, String> bin2Source = new TreeMap<String, String>();
+		for (String groupName : groupsBin2Source.keySet()) {
+			Map<String, String> group = groupsBin2Source.get(groupName);
+			for (String bin :  group.keySet()) {
+				bin2Source.put(groupName + bin, groupName + group.get(bin));
+			}
+		}
+		return bin2Source;
 	}
 
 	public static Map<String, String> buildBin2SourceMap(List<String> group) {
