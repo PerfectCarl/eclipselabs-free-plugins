@@ -67,11 +67,6 @@ public class Categorize {
 				saveToXML(infos);
 			} catch (Exception e) {
 				System.out.println("EXCEPTION FOUND. RESTARTING..");
-				if (sortedBinsIndex[0] > 3) {
-					sortedBinsIndex[0] = sortedBinsIndex[0] - 3;
-				} else {
-					sortedBinsIndex[0] = 0;
-				}
 				exception = true;
 			}
 		} while (exception);
