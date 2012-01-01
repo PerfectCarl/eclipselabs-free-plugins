@@ -47,6 +47,12 @@
       <artifactId>guava</artifactId>
       <version>r09</version>
     </dependency>
+    <dependency>
+      <groupId>com.thoughtworks.xstream</groupId>
+      <artifactId>xstream</artifactId>
+      <version>1.4.2</version>
+    </dependency>
+
     <!-- Web scrapping libs -->
 	  <dependency>
 	    <groupId>org.seleniumhq.selenium</groupId>

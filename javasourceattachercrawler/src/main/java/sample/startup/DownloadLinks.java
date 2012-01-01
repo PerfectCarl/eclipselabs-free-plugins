@@ -23,24 +23,29 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 
 import com.google.common.io.Files;
+import com.thoughtworks.xstream.XStream;
 
 public class DownloadLinks {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		String url = "http://archive.apache.org/dist/";
-		WebDriver driver = new HtmlUnitDriver();
-		File file = new File("D:\\urls.txt");
-		file.delete();
-		Map<String, Object[]> links = getLinks(driver, url, file);
+		Map<String, Link> links = getLinks(url);
 
+		XStream xstream = new XStream();
+		xstream.alias("link", Link.class);
+		String out = xstream.toXML(links);
+		File file = new File("urls.xml");
+		file.delete();
+		Files.write(out, file, Charset.forName("UTF-8"));
 	}
 
-	private static Map<String, Object[]> getLinks(WebDriver driver, String begin, File out) throws IOException, InterruptedException {
+	private static Map<String, Link> getLinks(String begin) throws IOException, InterruptedException {
 
-		Map<String, Object[]> result = new HashMap<String, Object[]>();
+		Map<String, Link> result = new HashMap<String, Link>();
 		Set<String> nonVisitedLinks = new TreeSet<String>();
 		nonVisitedLinks.add(begin);
 		Set<String> visitedLinks = new HashSet<String>();
+		WebDriver driver = new HtmlUnitDriver();
 
 		while (!nonVisitedLinks.isEmpty()) {
 			String urlStr = nonVisitedLinks.iterator().next();
@@ -101,10 +106,10 @@ public class DownloadLinks {
 								}
 							}
 
-							result.put(nextUrlStr, new Object[]{size, time});
-							if (out !=null) {
-								Files.append(nextUrl.toExternalForm() + " " + size + " " + time + "\n", out, Charset.forName("UTF-8"));
-							}
+							Link link = new Link();
+							link.setSize(Double.toString(size));
+							link.setTime(Long.toString(time));
+							result.put(nextUrlStr, link);
 
 							System.out.println(nextUrlStr);
 
