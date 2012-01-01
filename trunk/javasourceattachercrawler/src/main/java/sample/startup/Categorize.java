@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,6 +35,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
+import com.thoughtworks.xstream.XStream;
 
 public class Categorize {
 
@@ -44,42 +44,65 @@ public class Categorize {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
+		boolean exception;
+		int[] sortedBinsIndex = new int[1];
+		sortedBinsIndex[0] = 0;
+		do {
+			exception = false;
+			try {
+				XStream xstream = new XStream();
+				xstream.alias("link", Link.class);
+				File file = new File("urls2.xml");
+				if (!file.exists()) file = new File("urls.xml");
+				Map<String, Link> links = (Map<String, Link>) xstream.fromXML(file);
 
-		List<String> lines = Files.readLines(new File("D:\\projects\\free-plugins\\javasourceattachercrawler\\urls.txt"), Charset.forName("UTF-8"));
+				Map<String, List<String>> groups = buildGroups(links);
+				Map<String, String> binUrl2SourceUrl = buildBinUrl2SourceUrlMap(groups);
 
-		List<String> urls = loadURLs(lines);
+				final Map<String, Double> sizes = loadURLSize(links);
+				List<String> sortedBins = sortBinBySize(binUrl2SourceUrl, sizes);
 
-		Map<String, List<String>> groups = buildGroups(urls);
+				Map<String, Link> infos = getInfo(binUrl2SourceUrl, sortedBins, links, sortedBinsIndex);
 
-		Map<String, String> bin2Source = buildGroupsBin2Source(groups);
-
-		final Map<String, Double> sizes = loadURLSize(lines);
-
-		List<String> sortedBins = sortBinBySize(bin2Source, sizes);
-
-		Map<String, Map<String, Object>> infos = getInfo(bin2Source, sortedBins, urls);
-
-
+				saveToXML(infos);
+			} catch (Exception e) {
+				System.out.println("EXCEPTION FOUND. RESTARTING..");
+				if (sortedBinsIndex[0] > 3) {
+					sortedBinsIndex[0] = sortedBinsIndex[0] - 3;
+				} else {
+					sortedBinsIndex[0] = 0;
+				}
+				exception = true;
+			}
+		} while (exception);
 
 	}
 
-	private static Map<String, Map<String, Object>> getInfo(Map<String, String> bin2Source, List<String> sortedBins, List<String> urls) throws Exception {
-		Map<String, Map<String, Object>> result = new HashMap<String, Map<String, Object>>();
+	private static Map<String, Link> getInfo(Map<String, String> binUrl2SourceUrl,
+			List<String> sortedBins, Map<String, Link> links, int[] sortedBinsIndex) throws Exception {
+		Map<String, Link> result = new HashMap<String, Link>(links);
+
+		// Process bin Urls in order
 		DefaultHttpClient httpclient = new DefaultHttpClient();
-		for (int i = 0; i < sortedBins.size(); i++) {
+		for (int i = sortedBinsIndex[0]; i < sortedBins.size(); i++) {
 			String bin = sortedBins.get(i);
-			String src = bin2Source.get(bin);
+			String src = binUrl2SourceUrl.get(bin);
 
-			System.out.println("src: "+src.substring("http://archive.apache.org/dist/".length())+";     bin:"+bin.substring("http://archive.apache.org/dist/".length()) );
+			// Debug and saving point
+			System.out.println("\nsrc: "+src.substring("http://archive.apache.org/dist/".length())+";     bin:"+bin.substring("http://archive.apache.org/dist/".length()) );
+			System.out.println("percent=" + i +"/" + sortedBins.size() + "=" + (int)((double)i*100/sortedBins.size()));
+			if (i % 10 == 0 && i > 0) {
+				saveToXML(result);
+			}
 
-			Map<String, Object> info = result.get(src);
-	        if (info == null) {
-	        	info = getFileInfo(httpclient, src, urls);
+			Link info = result.get(src);
+	        if (info == null || info.getMd5() == null || info.getNames() == null) {
+	        	info = getFileInfo(httpclient, src, result);
 	        	result.put(src, info);
 	        }
 
 	        boolean java = false;
-	        List<String> javanames = (List<String>) info.get("names");
+	        List<String> javanames = info.getNames();
 	        for (String name : javanames) {
 	        	if (name.endsWith(".java")) {
 	        		java = true;
@@ -95,51 +118,68 @@ public class Categorize {
         	// continue with bin file
         	if (bin.endsWith(".jar")) {
         		info = result.get(bin);
-    	        if (info == null) {
-    	        	info = getFileInfo(httpclient, bin, urls);
+        		if (info == null || info.getMd5() == null || info.getNames() == null) {
+    	        	info = getFileInfo(httpclient, bin, result);
     	        	result.put(bin, info);
+    		        List<String> classnames = info.getNames();
+    		        boolean valid = isSource(javanames, classnames);
+    		        if (valid) {
+    		        	info.setSrc(src);
+    		        	result.put(bin, info);
+    		        	System.out.println("->bin:" + bin.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
+    		        }
     	        }
-		        List<String> classnames = (List<String>) info.get("names");
-		        boolean valid = isSource(javanames, classnames);
-		        if (valid) {
-		        	info.put("src", src);
-		        	result.put(bin, info);
-		        	System.out.println("->bin:" + bin.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
-		        }
         	} else {
-
-        		File file = download(httpclient, bin);
-        		ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
-        		ZipEntry entry;
-        		do {
-        			entry = zis.getNextEntry();
-        			if (entry == null) break;
-        			if (entry.getName().endsWith(".jar")) {
-        				// Copy inner jar file to temp file
-        				File temp = File.createTempFile("tmp", ".jar");
-        			    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
-        			    IOUtils.copy(zis, fos);
-        				IOUtils.closeQuietly(fos);
-
-        				// process jar files in temp file
-        				processJarFiles(result, src, javanames, "jar:" + bin + "!/" + entry.getName(), temp);
-
-        				// remove temp file
-        				temp.delete();
+        		boolean processed = false;
+        		for (String u : result.keySet()) {
+        			if (u.contains(bin) && u.contains("!/")) {
+        				processed = true;
+        				break;
         			}
-        		} while (true);
-        		file.delete();
+        		}
+        		if (!processed) {
+	        		File file = download(httpclient, bin);
+	        		ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
+	        		ZipEntry entry;
+	        		do {
+	        			entry = zis.getNextEntry();
+	        			if (entry == null) break;
+	        			if (entry.getName().endsWith(".jar")) {
+	        				// Copy inner jar file to temp file
+	        				File temp = File.createTempFile("tmp", ".jar");
+	        			    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
+	        			    IOUtils.copy(zis, fos);
+	        				IOUtils.closeQuietly(fos);
+
+	        				// process jar files in temp file
+	        				processJarFiles(result, src, javanames, "jar:" + bin + "!/" + entry.getName(), temp);
+
+	        				// remove temp file
+	        				temp.delete();
+	        			}
+	        		} while (true);
+	        		file.delete();
+        		}
         	}
 
+        	sortedBinsIndex[0] = sortedBinsIndex[0] + 1;
 
-			System.out.println("percent:" + (int)((double)i*100/sortedBins.size()));
 		}
 
 		return result;
 	}
 
+	private static void saveToXML(Map<String, Link> result) throws IOException {
+		XStream xstream = new XStream();
+		xstream.alias("link", Link.class);
+		String out = xstream.toXML(result);
+		System.out.println("SAVING...");
+
+		Files.write(out, new File("urls2.xml"), Charset.forName("UTF-8"));
+	}
+
 	private static void processJarFiles(
-			Map<String, Map<String, Object>> result,
+			Map<String, Link> result,
 			String src, List<String> javanames,
 			String path, File temp) throws Exception {
 
@@ -151,7 +191,7 @@ public class Categorize {
 		do {
 			entry2 = zis2.getNextEntry();
 			if (entry2 == null) break;
-			classnames.add(entry2.getName());
+			if (entry2.getName().endsWith(".class") || entry2.getName().endsWith(".java")) classnames.add(entry2.getName());
 		} while (true);
 		IOUtils.closeQuietly(zis2);
 		IOUtils.closeQuietly(is2);
@@ -176,12 +216,12 @@ public class Categorize {
 		    String md5Str = Hex.encodeHexString(md5.digest());
 		    String sha1Str = Hex.encodeHexString(sha1.digest());
 		    long size = readTotal;
-			Map<String, Object> info2 = new HashMap<String, Object>();
-			info2.put("md5", md5Str);
-			info2.put("sha1", sha1Str);
-			info2.put("size", String.valueOf(size));
-			info2.put("names", classnames);
-			info2.put("src", src);
+			Link info2 = new Link();
+			info2.setMd5(md5Str);
+			info2.setSha1(sha1Str);
+			info2.setSize(String.valueOf(size));
+			info2.setNames(classnames);
+			info2.setSrc(src);
 			result.put(path, info2);
 			System.out.println("->bin:" + path.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
 		}
@@ -220,7 +260,7 @@ public class Categorize {
 		return ((double)commonCount/ classnames2.size()) >= 0.5;
 	}
 
-	private static Map<String, Object> getFileInfo(DefaultHttpClient httpclient, String url, List<String> urls) throws Exception {
+	private static Link getFileInfo(DefaultHttpClient httpclient, String url, Map<String, Link> cache) throws Exception {
 
 		String md5Str;
 		String sha1Str;
@@ -230,7 +270,7 @@ public class Categorize {
 
 		List<String> names = getFileNames(httpclient, url);
 
-		if (urls.contains(url + ".md5") && urls.contains(url + ".sha1")) {
+		if (cache.containsKey(url + ".md5") && cache.containsKey(url + ".sha1")) {
 			// fast way
 			System.out.println("FAST");
 
@@ -272,11 +312,11 @@ public class Categorize {
 		}
 
 
-		Map<String, Object> info = new HashMap<String, Object>();
-	    info.put("md5", md5Str);
-	    info.put("sha1", sha1Str);
-	    info.put("size", String.valueOf(size));
-	    info.put("names", names);
+		Link info = new Link();
+	    info.setMd5(md5Str);
+	    info.setSha1(sha1Str);
+	    info.setSize(String.valueOf(size));
+	    info.setNames(names);
 
 		return info;
 	}
@@ -296,7 +336,7 @@ public class Categorize {
 		do {
 			entry = zis.getNextEntry();
 			if (entry == null) break;
-			names.add(entry.getName());
+			if (entry.getName().endsWith(".class") || entry.getName().endsWith(".java")) names.add(entry.getName());
 		} while (true);
 		IOUtils.closeQuietly(zis);
 		IOUtils.closeQuietly(is);
@@ -319,20 +359,18 @@ public class Categorize {
 		return sortedBins;
 	}
 
-	private static Map<String, Double> loadURLSize(List<String> lines) {
+	private static Map<String, Double> loadURLSize(Map<String, Link> links) {
 		Map<String, Double> result = new HashMap<String, Double>();
-		for (String line : lines) {
-			if (StringUtils.isNotEmpty(line)) {
-				String[] array = StringUtils.split(StringUtils.trimToEmpty(line), " ");
-				String url = StringUtils.trimToEmpty(array[0]);
-				Double size = Double.parseDouble(StringUtils.trimToEmpty(array[1]));
+		for (String  url : links.keySet()) {
+			if (!url.contains("!/")) {
+				Double size = Double.parseDouble(links.get(url).getSize());
 				result.put(url, size);
 			}
 		}
 		return result;
 	}
 
-	private static Map<String, String> buildGroupsBin2Source(Map<String, List<String>> groups) throws IOException {
+	private static Map<String, String> buildBinUrl2SourceUrlMap(Map<String, List<String>> groups) throws IOException {
 		Map<String, Map<String, String>> groupsBin2Source = new HashMap<String, Map<String, String>>();
 
 		Set<String> groupNames = new TreeSet<String>();
@@ -524,35 +562,37 @@ public class Categorize {
 		return result;
 	}
 
-	private static Map<String, List<String>> buildGroups(final List<String> lines) {
+	private static Map<String, List<String>> buildGroups(final Map<String, Link> links) {
 		Map<String, List<String>> grouping = new HashMap<String, List<String>>();
 
 		Pattern pattern = Pattern.compile("/[^/]*[0-9]+\\.[0-9]+[^/]*/");
-		for (String line : lines) {
-			String group;
-			group = getGroupName(pattern, line);
-			List<String> items = grouping.get(group);
-			if (items == null) {
-				items = new ArrayList<String>();
-				grouping.put(group, items);
+		for (String url : links.keySet()) {
+			if (!url.contains("!/")) {
+				String group;
+				group = getGroupName(pattern, url);
+				List<String> items = grouping.get(group);
+				if (items == null) {
+					items = new ArrayList<String>();
+					grouping.put(group, items);
+				}
+				items.add(url.substring(group.length()));
 			}
-			items.add(line.substring(group.length()));
 		}
 		return grouping;
 	}
 
-	public static String getGroupName(Pattern pattern, String line) {
+	public static String getGroupName(Pattern pattern, String url) {
 		String group;
-		if (pattern.matcher(line).find()) {
-			String reverse = StringUtils.reverse(line);
+		if (pattern.matcher(url).find()) {
+			String reverse = StringUtils.reverse(url);
 			Matcher matcher = pattern.matcher(reverse);
 			matcher.find();
 			String matched = matcher.group();
 			int remainingNum = reverse.indexOf(matched);
-			int startIndex = line.length() - remainingNum - matched.length();
-			group = line.substring(0, startIndex + 1);
+			int startIndex = url.length() - remainingNum - matched.length();
+			group = url.substring(0, startIndex + 1);
 		} else {
-			group = line.substring(0, line.lastIndexOf('/') + 1);
+			group = url.substring(0, url.lastIndexOf('/') + 1);
 		}
 		String[] removed = new String[]{"/binaries/", "/binary/", "/bin/", "/sources/", "/source/", "/src/", "/jars/"};
 		for (String remove : removed) {
