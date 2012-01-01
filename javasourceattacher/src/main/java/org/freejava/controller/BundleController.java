@@ -28,14 +28,12 @@ public class BundleController {
 	public Bundle create(ServletRequest request) {
 		String md5 = request.getParameter("md5");
 		String sha1 = request.getParameter("sha1");
-		String md5First1024Bytes = request.getParameter("md5First1024Bytes");
 		String fileSize = request.getParameter("fileSize");
 		String sourceId = request.getParameter("sourceId");
 
 		Bundle bundle = new Bundle();
 		bundle.setMd5(md5);
 		bundle.setSha1(sha1);
-		bundle.setMd5First1024Bytes(md5First1024Bytes);
 		if (StringUtils.isNotBlank(fileSize))
 			bundle.setFileSize(Long.parseLong(fileSize));
 		if (StringUtils.isNotBlank(sourceId))
@@ -61,10 +59,6 @@ public class BundleController {
 		String sha1 = request.getParameter("sha1");
 		if (StringUtils.isNotBlank(sha1))
 			criteriaValues.put("sha1", new Object[] {sha1});
-
-		String md5First1024Bytes = request.getParameter("md5First1024Bytes");
-		if (StringUtils.isNotBlank(md5First1024Bytes))
-			criteriaValues.put("md5First1024Bytes", new Object[] {md5First1024Bytes});
 
 		String fileSize = request.getParameter("fileSize");
 		if (StringUtils.isNotBlank(fileSize))
