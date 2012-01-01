@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -58,7 +59,6 @@ public class Categorize {
 
 		Map<String, Map<String, Object>> infos = getInfo(bin2Source, sortedBins, urls);
 
-	    System.out.println(sortedBins);
 
 
 	}
@@ -70,7 +70,7 @@ public class Categorize {
 			String bin = sortedBins.get(i);
 			String src = bin2Source.get(bin);
 
-System.out.println("src:"+src+";     bin:"+bin );
+			System.out.println("src: "+src.substring("http://archive.apache.org/dist/".length())+";     bin:"+bin.substring("http://archive.apache.org/dist/".length()) );
 
 			Map<String, Object> info = result.get(src);
 	        if (info == null) {
@@ -94,14 +94,20 @@ System.out.println("src:"+src+";     bin:"+bin );
 
         	// continue with bin file
         	if (bin.endsWith(".jar")) {
-	        	info = getFileInfo(httpclient, src, urls);
+        		info = result.get(bin);
+    	        if (info == null) {
+    	        	info = getFileInfo(httpclient, bin, urls);
+    	        	result.put(bin, info);
+    	        }
 		        List<String> classnames = (List<String>) info.get("names");
 		        boolean valid = isSource(javanames, classnames);
 		        if (valid) {
 		        	info.put("src", src);
 		        	result.put(bin, info);
+		        	System.out.println("->bin:" + bin.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
 		        }
         	} else {
+
         		File file = download(httpclient, bin);
         		ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
         		ZipEntry entry;
@@ -109,42 +115,77 @@ System.out.println("src:"+src+";     bin:"+bin );
         			entry = zis.getNextEntry();
         			if (entry == null) break;
         			if (entry.getName().endsWith(".jar")) {
-
+        				// Copy inner jar file to temp file
         				File temp = File.createTempFile("tmp", ".jar");
         			    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
         			    IOUtils.copy(zis, fos);
         				IOUtils.closeQuietly(fos);
 
-        				List<String> classnames = new ArrayList<String>();
-        				InputStream is2 = Files.newInputStreamSupplier(temp).getInput();
-        				ZipInputStream zis2 = new ZipInputStream(is2);
-        				ZipEntry entry2;
-        				do {
-        					entry2 = zis2.getNextEntry();
-        					if (entry2 == null) break;
-        					classnames.add(entry2.getName());
-        				} while (true);
-        				IOUtils.closeQuietly(zis2);
-        				IOUtils.closeQuietly(is2);
+        				// process jar files in temp file
+        				processJarFiles(result, src, javanames, "jar:" + bin + "!/" + entry.getName(), temp);
 
+        				// remove temp file
         				temp.delete();
-
-        		        boolean valid = isSource(javanames, classnames);
-        		        if (valid) {
-        		        	info.put("src", src);
-        		        	result.put(bin, info);
-        		        }
         			}
-
         		} while (true);
         		file.delete();
         	}
 
 
-			System.out.println((int)((double)i*100/sortedBins.size()));
+			System.out.println("percent:" + (int)((double)i*100/sortedBins.size()));
 		}
 
 		return result;
+	}
+
+	private static void processJarFiles(
+			Map<String, Map<String, Object>> result,
+			String src, List<String> javanames,
+			String path, File temp) throws Exception {
+
+		// Get class file names
+		List<String> classnames = new ArrayList<String>();
+		InputStream is2 = Files.newInputStreamSupplier(temp).getInput();
+		ZipInputStream zis2 = new ZipInputStream(is2);
+		ZipEntry entry2;
+		do {
+			entry2 = zis2.getNextEntry();
+			if (entry2 == null) break;
+			classnames.add(entry2.getName());
+		} while (true);
+		IOUtils.closeQuietly(zis2);
+		IOUtils.closeQuietly(is2);
+
+		// is this source file for this bin file?
+		boolean valid = isSource(javanames, classnames);
+
+		if (valid) {
+			// Calculate MD5 and SHA1 and file size
+			is2 = Files.newInputStreamSupplier(temp).getInput();
+		    MessageDigest md5 = MessageDigest.getInstance("MD5");
+		    MessageDigest sha1 = MessageDigest.getInstance("SHA");
+		    long readTotal = 0;
+		    byte[] buffer = new byte[2048];
+		    int read = is2.read(buffer, 0, 2048);
+		    while (read > -1) {
+		    	readTotal += read;
+		        md5.update(buffer, 0, read);
+		        sha1.update(buffer, 0, read);
+		        read = is2.read(buffer, 0, 2048);
+		    }
+		    String md5Str = Hex.encodeHexString(md5.digest());
+		    String sha1Str = Hex.encodeHexString(sha1.digest());
+		    long size = readTotal;
+			Map<String, Object> info2 = new HashMap<String, Object>();
+			info2.put("md5", md5Str);
+			info2.put("sha1", sha1Str);
+			info2.put("size", String.valueOf(size));
+			info2.put("names", classnames);
+			info2.put("src", src);
+			result.put(path, info2);
+			System.out.println("->bin:" + path.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
+		}
+
 	}
 
 	private static File download(DefaultHttpClient httpclient, String bin) throws Exception {
@@ -155,7 +196,7 @@ System.out.println("src:"+src+";     bin:"+bin );
 	    IOUtils.copy(is, fos);
 		IOUtils.closeQuietly(fos);
 		IOUtils.closeQuietly(is);
-		return null;
+		return temp;
 	}
 
 	private static boolean isSource(List<String> javanames, List<String> classnames) {
@@ -169,13 +210,14 @@ System.out.println("src:"+src+";     bin:"+bin );
 		Set<String> classnames2 = new HashSet<String>();
 		for (String classname : classnames) {
 			String name = FilenameUtils.getName(classname);
-			if (name.endsWith(".class")) {
+			if (name.endsWith(".class") && !name.contains("$")) {
 				classnames2.add(name.substring(0, name.length() - ".class".length()));
 			}
 		}
-		int commonCount = Sets.intersection(javanames2, classnames2).size();
+		Set<String> intersec = Sets.intersection(javanames2, classnames2);
+		int commonCount = intersec.size();
 
-		return commonCount > 10;
+		return ((double)commonCount/ classnames2.size()) >= 0.5;
 	}
 
 	private static Map<String, Object> getFileInfo(DefaultHttpClient httpclient, String url, List<String> urls) throws Exception {
@@ -184,13 +226,13 @@ System.out.println("src:"+src+";     bin:"+bin );
 		String sha1Str;
 		long size;
 
-		List<String> names = getFileNames(httpclient, url);
-		System.out.println(names);
+		System.out.println("getFileInfo " + url.substring("http://archive.apache.org/dist/".length()));
 
+		List<String> names = getFileNames(httpclient, url);
 
 		if (urls.contains(url + ".md5") && urls.contains(url + ".sha1")) {
 			// fast way
-			System.out.println("FAST:" + url);
+			System.out.println("FAST");
 
 			HttpResponse response = httpclient.execute(new HttpHead(url));
 			size = Long.parseLong(response.getFirstHeader("Content-Length").getValue());
@@ -207,7 +249,7 @@ System.out.println("src:"+src+";     bin:"+bin );
 
 		} else {
 			// slow way
-			System.out.println("SLOW:" + url);
+			System.out.println("FAST");
 
 			HttpResponse response = httpclient.execute(new HttpGet(url));
 			size = response.getEntity().getContentLength();
@@ -243,6 +285,9 @@ System.out.println("src:"+src+";     bin:"+bin );
 			String url) throws IOException, ClientProtocolException {
 		List<String> names = new ArrayList<String>();
 		HttpGet request = new HttpGet(url);
+
+		System.out.println("getFileNames: " + url.substring("http://archive.apache.org/dist/".length()));
+
 		HttpResponse response = httpclient.execute(request);
 		HttpEntity entity = response.getEntity();
 		InputStream is = entity.getContent();
@@ -252,7 +297,6 @@ System.out.println("src:"+src+";     bin:"+bin );
 			entry = zis.getNextEntry();
 			if (entry == null) break;
 			names.add(entry.getName());
-			//System.out.println(entry.getName());
 		} while (true);
 		IOUtils.closeQuietly(zis);
 		IOUtils.closeQuietly(is);
