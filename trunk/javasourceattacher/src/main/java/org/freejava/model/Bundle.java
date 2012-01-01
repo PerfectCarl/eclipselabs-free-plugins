@@ -11,10 +11,9 @@ public class Bundle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String md5First1024Bytes; // to avoid downloading whole file to calculate md5
     private Long fileSize;
 
-    private String md5; // may be null if md5First1024Bytes and fileSize are used
+    private String md5;
     private String sha1;
 
     private Long sourceId; // ID of corresponding source bundle
@@ -41,13 +40,6 @@ public class Bundle {
 	}
 	public void setSha1(String sha1) {
 		this.sha1 = sha1;
-	}
-
-	public String getMd5First1024Bytes() {
-		return md5First1024Bytes;
-	}
-	public void setMd5First1024Bytes(String md5First1024Bytes) {
-		this.md5First1024Bytes = md5First1024Bytes;
 	}
 
 	public Long getFileSize() {
