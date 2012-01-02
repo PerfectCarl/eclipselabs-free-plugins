@@ -1,12 +1,23 @@
 package sample.startup;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.google.common.io.Files;
 
 public class CategorizeTest {
 
@@ -215,5 +226,33 @@ public class CategorizeTest {
 
 		Map<String, String> result = Categorize.buildBin2SourceMap(group);
 		Assert.assertFalse(result.isEmpty());
+	}
+
+	@Test
+	public void testJar() throws IOException {
+		List<String> classnames = new ArrayList<String>();
+		InputStream is2 = Files.newInputStreamSupplier(new File("openxml.jar")).getInput();
+		ZipInputStream zis2 = new ZipInputStream(is2);
+		ZipEntry entry2;
+		do {
+			entry2 = zis2.getNextEntry();
+			if (entry2 == null) break;
+			if (entry2.getName().endsWith(".class") || entry2.getName().endsWith(".java")) classnames.add(entry2.getName());
+		} while (true);
+		IOUtils.closeQuietly(zis2);
+		IOUtils.closeQuietly(is2);
+
+	}
+	@Test
+	public void testJar2() throws IOException {
+		List<String> classnames = new ArrayList<String>();
+		ZipFile zf = new ZipFile(new File("openxml.jar"));
+		Enumeration<ZipArchiveEntry> entries = zf.getEntries();
+		for (; entries.hasMoreElements(); ) {
+			ZipArchiveEntry entry = entries.nextElement();
+			String entryName = entry.getName();
+			if (entryName.endsWith(".class") || entryName.endsWith(".java")) classnames.add(entryName);
+		}
+		System.out.println(classnames);
 	}
 }
