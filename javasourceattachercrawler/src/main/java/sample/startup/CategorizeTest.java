@@ -246,7 +246,7 @@ public class CategorizeTest {
 	@Test
 	public void testJar2() throws IOException {
 		List<String> classnames = new ArrayList<String>();
-		ZipFile zf = new ZipFile(new File("openxml.jar"));
+		ZipFile zf = new ZipFile(new File("C:\\Users\\thaiha\\Downloads\\org.apache.felix.fileinstall-3.1.0-project.zip"));
 		Enumeration<ZipArchiveEntry> entries = zf.getEntries();
 		for (; entries.hasMoreElements(); ) {
 			ZipArchiveEntry entry = entries.nextElement();

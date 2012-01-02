@@ -31,14 +31,23 @@ public class DownloadLinks {
 		String url = "http://archive.apache.org/dist/";
 		Map<String, Link> links = getLinks(url);
 
-		XStream xstream = new XStream();
-		xstream.alias("link", Link.class);
-		String out = xstream.toXML(links);
-		File file = new File("urls.xml");
-		file.delete();
-		Files.write(out, file, Charset.forName("UTF-8"));
-	}
+		saveToXML(links, null);
 
+
+	}
+	private static void saveToXML(Map<String, Link> links, Set<String> pairsProcessed) throws IOException {
+		XStream xstream = new XStream();
+		xstream.alias("state", State.class);
+		xstream.alias("link", Link.class);
+		State state = new State();
+		state.setLinks(links);
+		state.setPairsProcessed(pairsProcessed);
+
+		String out = xstream.toXML(state);
+		System.out.println("SAVING...");
+
+		Files.write(out, new File("urls.xml"), Charset.forName("UTF-8"));
+	}
 	private static Map<String, Link> getLinks(String begin) throws IOException, InterruptedException {
 
 		Map<String, Link> result = new HashMap<String, Link>();
