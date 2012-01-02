@@ -35,7 +35,7 @@ public class MakeBulk {
 		State state = (State) xstream.fromXML(file);;
 		Map<String, Link> links = state.getLinks();
 
-		long bundleId = 1;
+		long bundleId = 1001;
 		Map<String, Bundle> bundles = new HashMap<String, Bundle>();
 		for (String binOrigin : links.keySet()) {
 			Link binLink = links.get(binOrigin);
