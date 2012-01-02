@@ -578,11 +578,17 @@ public class Categorize {
 				"/logging/log4cxx/", "/logging/log4net/", "/logging/log4php/",
 				"/ws/axis2-c/", "/ws/axis2/c/", "/xml/xalan-c/", "/xml/xerces-c/", "/jk2/",
 				"/jk/",  "/subversion/", "/spamassassin/", "/jserv/", "/ooo/", "/buildr/",
+				"/ws/woden/1.0m9/",
 				"/harmony/", "current", "previous", "latest", "-docs", "-javadoc", "-manual"};
 
 		for (Map.Entry<String, Link> entry : links.entrySet()) {
 
 			String url = StringUtils.trimToEmpty(entry.getKey());
+
+			if (url.contains("woden-1.0M9-dom.zip")) {
+				System.out.println("woden-1.0M9-dom.zip");
+			}
+
 			if (StringUtils.isNotEmpty(url)) {
 				String test = url.toLowerCase();
 				for (String suffix: suffixes) {

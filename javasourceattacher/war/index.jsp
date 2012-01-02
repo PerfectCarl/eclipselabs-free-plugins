@@ -26,10 +26,7 @@
         <td>sha1:</td><td><input type="text" name="sha1"></td>
       </tr>
       <tr>
-        <td>md5First1024Bytes:</td><td><input type="text" name="md5First1024Bytes"></td>
-      </tr>
-      <tr>
-        <td>fileSize:</td><td><input type="text" name="fileSize"></td>
+        <td>origin:</td><td><input type="text" name="origin"></td>
       </tr>
       <tr>
         <td><input type=submit value=Submit></td>
