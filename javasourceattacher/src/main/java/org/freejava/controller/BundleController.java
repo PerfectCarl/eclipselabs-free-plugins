@@ -26,16 +26,15 @@ public class BundleController {
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
 	public Bundle create(ServletRequest request) {
+		String origin = request.getParameter("origin");
 		String md5 = request.getParameter("md5");
 		String sha1 = request.getParameter("sha1");
-		String fileSize = request.getParameter("fileSize");
 		String sourceId = request.getParameter("sourceId");
 
 		Bundle bundle = new Bundle();
+		bundle.setOrigin(origin);
 		bundle.setMd5(md5);
 		bundle.setSha1(sha1);
-		if (StringUtils.isNotBlank(fileSize))
-			bundle.setFileSize(Long.parseLong(fileSize));
 		if (StringUtils.isNotBlank(sourceId))
 			bundle.setSourceId(Long.parseLong(sourceId));
 
@@ -60,9 +59,9 @@ public class BundleController {
 		if (StringUtils.isNotBlank(sha1))
 			criteriaValues.put("sha1", new Object[] {sha1});
 
-		String fileSize = request.getParameter("fileSize");
-		if (StringUtils.isNotBlank(fileSize))
-			criteriaValues.put("fileSize", new Object[] {fileSize});
+		String origin = request.getParameter("origin");
+		if (StringUtils.isNotBlank(origin))
+			criteriaValues.put("origin", new Object[] {origin});
 
 		String sourceId = request.getParameter("sourceId");
 		if (StringUtils.isNotBlank(sourceId))
