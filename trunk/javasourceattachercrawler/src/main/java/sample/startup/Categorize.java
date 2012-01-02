@@ -1,7 +1,6 @@
 package sample.startup;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,6 +23,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.FilenameUtils;
@@ -47,14 +47,20 @@ public class Categorize {
 	 * @throws Exception
 	 */
 	public static void main(String[] args) throws Exception {
+
+
 		boolean exception;
-		int[] sortedBinsIndex = new int[1];
-		sortedBinsIndex[0] = 1000;
+		Set<String> donePairs = new HashSet<String>();
 		do {
 			exception = false;
 			try {
 
-				Map<String, Link> links = loadURLs();
+				State state = loadState();
+
+				Map<String, Link> links = state.getLinks();
+				if (state.getPairsProcessed() != null) {
+					donePairs = state.getPairsProcessed();
+				}
 
 				Map<String, List<String>> groups = buildGroups(links);
 				Map<String, String> binUrl2SourceUrl = buildBinUrl2SourceUrlMap(groups);
@@ -62,9 +68,10 @@ public class Categorize {
 				final Map<String, Double> sizes = loadURLSize(links);
 				List<String> sortedBins = sortBinBySize(binUrl2SourceUrl, sizes);
 
-				Map<String, Link> infos = getInfo(binUrl2SourceUrl, sortedBins, links, sortedBinsIndex);
+				Map<String, Link> infos = getInfo(binUrl2SourceUrl, sortedBins, links, donePairs);
 
-				saveToXML(infos);
+				saveToXML(infos, donePairs);
+
 			} catch (Exception e) {
 				System.out.println("EXCEPTION FOUND. RESTARTING..");
 				e.printStackTrace();
@@ -75,110 +82,130 @@ public class Categorize {
 	}
 
 	private static Map<String, Link> getInfo(Map<String, String> binUrl2SourceUrl,
-			List<String> sortedBins, Map<String, Link> links, int[] sortedBinsIndex) throws Exception {
+			List<String> sortedBins, Map<String, Link> links, Set<String> donePairs) throws Exception {
 		Map<String, Link> result = new HashMap<String, Link>(links);
 
 		// Process bin Urls in order
 		DefaultHttpClient httpclient = new DefaultHttpClient();
-		for (int i = sortedBinsIndex[0]; i < sortedBins.size(); i++) {
+		for (int i = 0; i < sortedBins.size(); i++) {
 			String bin = sortedBins.get(i);
 			String src = binUrl2SourceUrl.get(bin);
-			sortedBinsIndex[0] = i;
+
+			// avoid duplicate
+			String pair = DigestUtils.md5Hex(bin + src);
+			if (donePairs.contains(pair)) continue;
 
 			// Debug and saving point
 			System.out.println("\nsrc: "+src.substring("http://archive.apache.org/dist/".length())+";     bin:"+bin.substring("http://archive.apache.org/dist/".length()) );
 			System.out.println("percent=" + i +"/" + sortedBins.size() + "=" + (int)((double)i*100/sortedBins.size()));
 			if (i % 10 == 0 && i > 0) {
-				saveToXML(result);
+				saveToXML(result, donePairs);
 			}
 
-			Link info = result.get(src);
-	        if (info == null || info.getMd5() == null || info.getNames() == null) {
-	        	info = getFileInfo(httpclient, src, result);
-	        	result.put(src, info);
+			// source file
+			Link info1 = result.get(src);
+	        if (info1 == null || info1.getMd5() == null || info1.getNames() == null) {
+	        	info1 = getFileInfo(httpclient, src, result);
+	        	result.put(src, info1);
 	        }
-
-	        boolean java = false;
-	        List<String> javanames = info.getNames();
+	        boolean isJavaSourceFile = false;
+	        List<String> javanames = info1.getNames();
 	        for (String name : javanames) {
 	        	if (name.endsWith(".java")) {
-	        		java = true;
+	        		isJavaSourceFile = true;
 	        		break;
 	        	}
 	        }
 
-	        if (!java) {
-	        	continue;
+        	// binary file
+	        if (isJavaSourceFile) {
+	        	processBinFile(result, httpclient, bin, src, javanames);
 	        }
 
-
-        	// continue with bin file
-        	if (bin.endsWith(".jar")) {
-        		info = result.get(bin);
-        		if (info == null || info.getMd5() == null || info.getNames() == null) {
-    	        	info = getFileInfo(httpclient, bin, result);
-    	        	result.put(bin, info);
-    		        List<String> classnames = info.getNames();
-    		        boolean valid = isSource(javanames, classnames);
-    		        if (valid) {
-    		        	info.setSrc(src);
-    		        	result.put(bin, info);
-    		        	System.out.println("->bin:" + bin.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
-    		        }
-    	        }
-        	} else {
-        		boolean processed = false;
-        		for (String u : result.keySet()) {
-        			if (u.contains(bin) && u.contains("!/")) {
-        				processed = true;
-        				break;
-        			}
-        		}
-        		if (!processed) {
-	        		File file = download(httpclient, bin);
-	        		ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
-	        		ZipEntry entry;
-	        		do {
-	        			entry = zis.getNextEntry();
-	        			if (entry == null) break;
-	        			if (entry.getName().endsWith(".jar")) {
-	        				// Copy inner jar file to temp file
-	        				File temp = File.createTempFile("tmp", ".jar");
-	        			    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
-	        			    IOUtils.copy(zis, fos);
-	        				IOUtils.closeQuietly(fos);
-
-	        				// process jar files in temp file
-	        				processJarFiles(result, src, javanames, "jar:" + bin + "!/" + entry.getName(), temp);
-
-	        				// remove temp file
-	        				temp.delete();
-	        			}
-	        		} while (true);
-	        		file.delete();
-        		}
-        	}
-
-
-
+	        // avoid duplicate
+        	donePairs.add(pair);
 		}
 
 		return result;
 	}
 
-	private static void saveToXML(Map<String, Link> result) throws IOException {
+	private static void processBinFile(Map<String, Link> result,
+			DefaultHttpClient httpclient, String bin, String src,
+			List<String> javanames) throws Exception {
+
+		// jar file
+		if (bin.endsWith(".jar")) {
+			Link info = result.get(bin);
+			if (info == null || info.getMd5() == null || info.getNames() == null) {
+		    	info = getFileInfo(httpclient, bin, result);
+		    	result.put(bin, info);
+		        List<String> classnames = info.getNames();
+		        boolean valid = isSource(javanames, classnames);
+		        if (valid) {
+		        	info.setSrc(src);
+		        	result.put(bin, info);
+		        	System.out.println("->bin:" + bin.substring("http://archive.apache.org/dist/".length()) + "; src:" + src.substring("http://archive.apache.org/dist/".length()));
+		        }
+		    }
+
+		} else { // zip file
+
+
+			File file = null;
+			ZipFile zf = null;
+			try {
+				file = download(httpclient, bin);
+				zf = new ZipFile(file);
+
+				Enumeration<ZipArchiveEntry> entries = zf.getEntries();
+				while (entries.hasMoreElements()) {
+					ZipArchiveEntry entry = entries.nextElement();
+					if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".jar")) {
+
+						// Copy inner jar file to temp file
+						File temp = File.createTempFile("tmp", ".jar");
+					    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
+					    InputStream zis = zf.getInputStream(entry);
+					    IOUtils.copy(zis, fos);
+						IOUtils.closeQuietly(zis);
+						IOUtils.closeQuietly(fos);
+						// process jar files in temp file
+						try {
+							processJarFile(result, src, javanames, "jar:" + bin + "!/" + entry.getName(), temp);
+						} catch (Exception e) {
+							System.out.println("IGNORED:" + e);
+						}
+						// remove temp file
+						temp.delete();
+					}
+				}
+			} finally {
+				ZipFile.closeQuietly(zf);
+				if (file != null) file.delete();
+			}
+		}
+	}
+
+	private static void saveToXML(Map<String, Link> links, Set<String> pairsProcessed) throws IOException {
 		XStream xstream = new XStream();
+		xstream.alias("state", State.class);
 		xstream.alias("link", Link.class);
-		String out = xstream.toXML(result);
+		State state = new State();
+		state.setLinks(links);
+		state.setPairsProcessed(pairsProcessed);
+
+		String out = xstream.toXML(state);
 		System.out.println("SAVING...");
 
 		Files.write(out, new File("urls2.xml"), Charset.forName("UTF-8"));
 	}
 
-	private static void processJarFiles(
+	private static void processJarFile(
 			Map<String, Link> result,
 			String src, List<String> javanames,
 			String path, File temp) throws Exception {
+
+		System.out.println("processJarFiles: " + path + " " + temp);
 
 		// Get class file names
 		List<String> classnames = new ArrayList<String>();
@@ -225,12 +252,25 @@ public class Categorize {
 
 	private static File download(DefaultHttpClient httpclient, String bin) throws Exception {
 		HttpResponse response = httpclient.execute(new HttpGet(bin));
-		InputStream is = response.getEntity().getContent();
+		HttpEntity entity = response.getEntity();
+		long length = entity.getContentLength();
 	    File temp = File.createTempFile("tmp", ".zip");
-	    OutputStream fos = Files.newOutputStreamSupplier(temp).getOutput();
-	    IOUtils.copy(is, fos);
-		IOUtils.closeQuietly(fos);
-		IOUtils.closeQuietly(is);
+		InputStream is = null;
+	    OutputStream fos = null;
+	    try {
+	    	is = entity.getContent();
+	    	fos = Files.newOutputStreamSupplier(temp).getOutput();
+	    	IOUtils.copy(is, fos);
+	    } finally {
+			IOUtils.closeQuietly(fos);
+			IOUtils.closeQuietly(is);
+	    }
+		if (temp.length() != length) {
+			throw new IllegalStateException();
+		}
+		if (bin.toLowerCase().endsWith(".zip") || bin.toLowerCase().endsWith(".jar")) {
+			// TODO: verify integrity
+		}
 		return temp;
 	}
 
@@ -518,16 +558,20 @@ public class Categorize {
 
 	}
 
-	private static Map<String, Link> loadURLs() throws IOException {
+	private static State loadState() throws IOException {
 
-		Map<String, Link> result = new HashMap<String, Link>();
 
 		XStream xstream = new XStream();
 		xstream.alias("link", Link.class);
+		xstream.alias("state", State.class);
 		File file = new File("urls2.xml");
 		if (!file.exists()) file = new File("urls.xml");
-		Map<String, Link> links = (Map<String, Link>) xstream.fromXML(file);
 
+		State state = (State) xstream.fromXML(file);;
+
+		Map<String, Link> links = state.getLinks();
+
+		Map<String, Link> newlinks = new HashMap<String, Link>();
 		final String[] suffixes = new String[]{".zip", ".jar", ".zip.sha1", ".zip.md5", ".jar.sha1", ".jar.md5"};
 		final String[] excludes = new String[]{"/activemq/activemq-cpp/", "/santuario/c-library/",
 				"/perl/", "/ws/axis-c/","/apr/", "/httpd/", "/ibatis.net/",
@@ -551,7 +595,7 @@ public class Categorize {
 							}
 						}
 						if (valid) {
-							result.put(entry.getKey(), entry.getValue());
+							newlinks.put(entry.getKey(), entry.getValue());
 							break;
 						}
 					}
@@ -560,7 +604,9 @@ public class Categorize {
 
 		}
 
-		return result;
+		state.setLinks(newlinks);
+
+		return state;
 	}
 
 	private static Map<String, List<String>> buildGroups(final Map<String, Link> links) {
