@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +24,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -46,7 +49,7 @@ public class Categorize {
 	public static void main(String[] args) throws Exception {
 		boolean exception;
 		int[] sortedBinsIndex = new int[1];
-		sortedBinsIndex[0] = 0;
+		sortedBinsIndex[0] = 3505;
 		do {
 			exception = false;
 			try {
@@ -67,6 +70,7 @@ public class Categorize {
 				saveToXML(infos);
 			} catch (Exception e) {
 				System.out.println("EXCEPTION FOUND. RESTARTING..");
+				e.printStackTrace();
 				exception = true;
 			}
 		} while (exception);
@@ -179,34 +183,32 @@ public class Categorize {
 			String path, File temp) throws Exception {
 
 		// Get class file names
+
 		List<String> classnames = new ArrayList<String>();
-		InputStream is2 = Files.newInputStreamSupplier(temp).getInput();
-		ZipInputStream zis2 = new ZipInputStream(is2);
-		ZipEntry entry2;
-		do {
-			entry2 = zis2.getNextEntry();
-			if (entry2 == null) break;
-			if (entry2.getName().endsWith(".class") || entry2.getName().endsWith(".java")) classnames.add(entry2.getName());
-		} while (true);
-		IOUtils.closeQuietly(zis2);
-		IOUtils.closeQuietly(is2);
+		ZipFile zf = new ZipFile(temp);
+		Enumeration<ZipArchiveEntry> entries = zf.getEntries();
+		for (; entries.hasMoreElements(); ) {
+			ZipArchiveEntry entry = entries.nextElement();
+			String entryName = entry.getName();
+			if (entryName.endsWith(".class") || entryName.endsWith(".java")) classnames.add(entryName);
+		}
 
 		// is this source file for this bin file?
 		boolean valid = isSource(javanames, classnames);
 
 		if (valid) {
 			// Calculate MD5 and SHA1 and file size
-			is2 = Files.newInputStreamSupplier(temp).getInput();
+			InputStream is = Files.newInputStreamSupplier(temp).getInput();
 		    MessageDigest md5 = MessageDigest.getInstance("MD5");
 		    MessageDigest sha1 = MessageDigest.getInstance("SHA");
 		    long readTotal = 0;
 		    byte[] buffer = new byte[2048];
-		    int read = is2.read(buffer, 0, 2048);
+		    int read = is.read(buffer, 0, 2048);
 		    while (read > -1) {
 		    	readTotal += read;
 		        md5.update(buffer, 0, read);
 		        sha1.update(buffer, 0, read);
-		        read = is2.read(buffer, 0, 2048);
+		        read = is.read(buffer, 0, 2048);
 		    }
 		    String md5Str = Hex.encodeHexString(md5.digest());
 		    String sha1Str = Hex.encodeHexString(sha1.digest());

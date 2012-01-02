@@ -52,6 +52,11 @@
       <artifactId>xstream</artifactId>
       <version>1.4.2</version>
     </dependency>
+	<dependency>
+		<groupId>org.apache.commons</groupId>
+		<artifactId>commons-compress</artifactId>
+		<version>1.3</version>
+	</dependency>
 
     <!-- Web scrapping libs -->
 	  <dependency>
