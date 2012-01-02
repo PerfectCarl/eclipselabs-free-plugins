@@ -11,12 +11,11 @@ public class Bundle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long fileSize;
-
+    private String origin;
     private String md5;
     private String sha1;
 
-    private Long sourceId; // ID of corresponding source bundle
+    private Long sourceId; // ID of corresponding source bundle if any
 
 
     // Accessors for the fields.  JPA doesn't use these, but your application does.
@@ -28,6 +27,12 @@ public class Bundle {
         this.id = id;
     }
 
+	public String getOrigin() {
+		return origin;
+	}
+	public void setOrigin(String origin) {
+		this.origin = origin;
+	}
 	public String getMd5() {
 		return md5;
 	}
@@ -40,13 +45,6 @@ public class Bundle {
 	}
 	public void setSha1(String sha1) {
 		this.sha1 = sha1;
-	}
-
-	public Long getFileSize() {
-		return fileSize;
-	}
-	public void setFileSize(Long fileSize) {
-		this.fileSize = fileSize;
 	}
 
 	public Long getSourceId() {
