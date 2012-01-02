@@ -118,6 +118,8 @@ public class LibraryController {
 					break;
 				}
 			}
+
+			result.add(lib);
 		}
 
 		return result;
