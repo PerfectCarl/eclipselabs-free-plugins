@@ -183,7 +183,6 @@ public class Categorize {
 			String path, File temp) throws Exception {
 
 		// Get class file names
-
 		List<String> classnames = new ArrayList<String>();
 		ZipFile zf = new ZipFile(temp);
 		Enumeration<ZipArchiveEntry> entries = zf.getEntries();
@@ -192,6 +191,7 @@ public class Categorize {
 			String entryName = entry.getName();
 			if (entryName.endsWith(".class") || entryName.endsWith(".java")) classnames.add(entryName);
 		}
+		zf.close();
 
 		// is this source file for this bin file?
 		boolean valid = isSource(javanames, classnames);
