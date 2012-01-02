@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.freejava.model.Bundle;
 import org.freejava.model.Location;
@@ -34,18 +35,32 @@ public class MakeBulk {
 
 		State state = (State) xstream.fromXML(file);;
 		Map<String, Link> links = state.getLinks();
+		List<String> origins = new ArrayList<String>();
+		origins.addAll(links.keySet());
+		Collections.sort(origins, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				if (o1.contains("!/")) {
+					o1 = o1.substring(2, o1.indexOf("!/"));
+				}
+				if (o2.contains("!/")) {
+					o2 = o2.substring(2, o2.indexOf("!/"));
+				}
+				return o1.compareTo(o2);
+			}
+		});
 
 		long bundleId = 1001;
 		Map<String, Bundle> bundles = new HashMap<String, Bundle>();
-		for (String binOrigin : links.keySet()) {
+		for (String binOrigin : origins) {
 			Link binLink = links.get(binOrigin);
 			if (binLink.getSrc() != null) {
 				String srcOrigin = binLink.getSrc();
 				Link srcLink = links.get(srcOrigin);
 
 				Bundle srcBundle;
-				if (bundles.containsKey(binOrigin)) {
-					srcBundle = bundles.get(binOrigin);
+				if (bundles.containsKey(srcOrigin)) {
+					srcBundle = bundles.get(srcOrigin);
 				} else {
 					srcBundle = new Bundle();
 					srcBundle.setId(bundleId++);
@@ -99,14 +114,14 @@ public class MakeBulk {
 					if (or1.startsWith("jar:")) or1 = or1.substring(4);
 					String or2 = b2.getOrigin();
 					if (or2.startsWith("jar:")) or2 = or2.substring(4);
-					return or1.compareTo(or2);
+					return b1.getId().compareTo(b2.getId());
 				}
 				if (o1.getClass() == Location.class) {
 					Location b1 = (Location) o1;
 					Location b2 = (Location) o2;
 					String or1 = b1.getUrl();
 					String or2 = b2.getUrl();
-					return or1.compareTo(or2);
+					return b1.getId().compareTo(b2.getId());
 				}
 				return 0;
 			}
