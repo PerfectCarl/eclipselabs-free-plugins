@@ -49,15 +49,12 @@ public class Categorize {
 	public static void main(String[] args) throws Exception {
 		boolean exception;
 		int[] sortedBinsIndex = new int[1];
-		sortedBinsIndex[0] = 3505;
+		sortedBinsIndex[0] = 1000;
 		do {
 			exception = false;
 			try {
-				XStream xstream = new XStream();
-				xstream.alias("link", Link.class);
-				File file = new File("urls2.xml");
-				if (!file.exists()) file = new File("urls.xml");
-				Map<String, Link> links = (Map<String, Link>) xstream.fromXML(file);
+
+				Map<String, Link> links = loadURLs();
 
 				Map<String, List<String>> groups = buildGroups(links);
 				Map<String, String> binUrl2SourceUrl = buildBinUrl2SourceUrlMap(groups);
@@ -86,6 +83,7 @@ public class Categorize {
 		for (int i = sortedBinsIndex[0]; i < sortedBins.size(); i++) {
 			String bin = sortedBins.get(i);
 			String src = binUrl2SourceUrl.get(bin);
+			sortedBinsIndex[0] = i;
 
 			// Debug and saving point
 			System.out.println("\nsrc: "+src.substring("http://archive.apache.org/dist/".length())+";     bin:"+bin.substring("http://archive.apache.org/dist/".length()) );
@@ -161,7 +159,7 @@ public class Categorize {
         		}
         	}
 
-        	sortedBinsIndex[0] = sortedBinsIndex[0] + 1;
+
 
 		}
 
@@ -520,9 +518,15 @@ public class Categorize {
 
 	}
 
-	private static List<String> loadURLs(List<String> lines) throws IOException {
+	private static Map<String, Link> loadURLs() throws IOException {
 
-		List<String> result = new ArrayList<String>();
+		Map<String, Link> result = new HashMap<String, Link>();
+
+		XStream xstream = new XStream();
+		xstream.alias("link", Link.class);
+		File file = new File("urls2.xml");
+		if (!file.exists()) file = new File("urls.xml");
+		Map<String, Link> links = (Map<String, Link>) xstream.fromXML(file);
 
 		final String[] suffixes = new String[]{".zip", ".jar", ".zip.sha1", ".zip.md5", ".jar.sha1", ".jar.md5"};
 		final String[] excludes = new String[]{"/activemq/activemq-cpp/", "/santuario/c-library/",
@@ -532,9 +536,9 @@ public class Categorize {
 				"/jk/",  "/subversion/", "/spamassassin/", "/jserv/", "/ooo/", "/buildr/",
 				"/harmony/", "current", "previous", "latest", "-docs", "-javadoc", "-manual"};
 
-		for (String line : lines) {
-			line = StringUtils.split(line, " ")[0];
-			String url = StringUtils.trimToEmpty(line);
+		for (Map.Entry<String, Link> entry : links.entrySet()) {
+
+			String url = StringUtils.trimToEmpty(entry.getKey());
 			if (StringUtils.isNotEmpty(url)) {
 				String test = url.toLowerCase();
 				for (String suffix: suffixes) {
@@ -547,7 +551,7 @@ public class Categorize {
 							}
 						}
 						if (valid) {
-							result.add(url);
+							result.put(entry.getKey(), entry.getValue());
 							break;
 						}
 					}
