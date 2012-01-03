@@ -281,6 +281,7 @@ public class Categorize {
 			}
 
 		    File tmp = File.createTempFile("tmp", ".zip");
+		    Files.copy(temp, tmp);
 			cache.put(url, tmp);
 		}
 		if (cache.size() > 10) {
