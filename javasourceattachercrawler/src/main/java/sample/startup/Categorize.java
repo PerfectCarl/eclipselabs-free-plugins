@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -250,26 +250,43 @@ public class Categorize {
 
 	}
 
-	private static File download(DefaultHttpClient httpclient, String bin) throws Exception {
-		HttpResponse response = httpclient.execute(new HttpGet(bin));
-		HttpEntity entity = response.getEntity();
-		long length = entity.getContentLength();
-	    File temp = File.createTempFile("tmp", ".zip");
-		InputStream is = null;
-	    OutputStream fos = null;
-	    try {
-	    	is = entity.getContent();
-	    	fos = Files.newOutputStreamSupplier(temp).getOutput();
-	    	IOUtils.copy(is, fos);
-	    } finally {
-			IOUtils.closeQuietly(fos);
-			IOUtils.closeQuietly(is);
-	    }
-		if (temp.length() != length) {
-			throw new IllegalStateException();
+	private static Map<String, File> cache = new LinkedHashMap<String, File>();
+	private static File download(DefaultHttpClient httpclient, String url) throws Exception {
+		File temp;
+		System.out.println("Downloading url:" + url);
+		if (cache.containsKey(url)) {
+		    temp = File.createTempFile("tmp", ".zip");
+			Files.copy(cache.get(url), temp);
+		} else {
+			HttpResponse response = httpclient.execute(new HttpGet(url));
+			HttpEntity entity = response.getEntity();
+			long length = entity.getContentLength();
+		    temp = File.createTempFile("tmp", ".zip");
+			InputStream is = null;
+		    OutputStream fos = null;
+		    try {
+		    	is = entity.getContent();
+		    	fos = Files.newOutputStreamSupplier(temp).getOutput();
+		    	IOUtils.copy(is, fos);
+		    } finally {
+				IOUtils.closeQuietly(fos);
+				IOUtils.closeQuietly(is);
+		    }
+			if (temp.length() != length) {
+				temp.delete();
+				throw new IllegalStateException();
+			}
+			if (url.toLowerCase().endsWith(".zip") || url.toLowerCase().endsWith(".jar")) {
+				// TODO: verify integrity
+			}
+
+		    File tmp = File.createTempFile("tmp", ".zip");
+			cache.put(url, tmp);
 		}
-		if (bin.toLowerCase().endsWith(".zip") || bin.toLowerCase().endsWith(".jar")) {
-			// TODO: verify integrity
+		if (cache.size() > 10) {
+			Map.Entry<String, File> entry = cache.entrySet().iterator().next();
+			cache.remove(entry.getKey());
+			entry.getValue().delete();
 		}
 		return temp;
 	}
@@ -357,25 +374,28 @@ public class Categorize {
 	}
 
 	private static List<String> getFileNames(DefaultHttpClient httpclient,
-			String url) throws IOException, ClientProtocolException {
-		List<String> names = new ArrayList<String>();
-		HttpGet request = new HttpGet(url);
-
+			String url) throws Exception {
 		System.out.println("getFileNames: " + url.substring("http://archive.apache.org/dist/".length()));
 
-		HttpResponse response = httpclient.execute(request);
-		HttpEntity entity = response.getEntity();
-		InputStream is = entity.getContent();
-		ZipInputStream zis = new ZipInputStream(is);
-		ZipEntry entry;
-		do {
-			entry = zis.getNextEntry();
-			if (entry == null) break;
-			if (entry.getName().endsWith(".class") || entry.getName().endsWith(".java")) names.add(entry.getName());
-		} while (true);
-		IOUtils.closeQuietly(zis);
-		IOUtils.closeQuietly(is);
-		request.abort();
+		List<String> names = new ArrayList<String>();
+
+		File tmp = download(httpclient, url);
+		InputStream is = null;
+		ZipInputStream zis = null;
+		try {
+			is = Files.newInputStreamSupplier(tmp).getInput();
+			zis = new ZipInputStream(is);
+			ZipEntry entry;
+			do {
+				entry = zis.getNextEntry();
+				if (entry == null) break;
+				if (entry.getName().endsWith(".class") || entry.getName().endsWith(".java")) names.add(entry.getName());
+			} while (true);
+		} finally {
+			IOUtils.closeQuietly(zis);
+			IOUtils.closeQuietly(is);
+			tmp.delete();
+		}
 		return names;
 	}
 
