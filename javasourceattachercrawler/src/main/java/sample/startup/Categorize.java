@@ -51,10 +51,10 @@ public class Categorize {
 
 		boolean exception;
 
+		Map<String, Link> infos = new HashMap<String, Link>();
+		Set<String> donePairs = new HashSet<String>();
 		do {
 			exception = false;
-			Map<String, Link> infos = new HashMap<String, Link>();
-			Set<String> donePairs = new HashSet<String>();
 			try {
 
 				State state = loadState();
@@ -80,7 +80,9 @@ public class Categorize {
 				e.printStackTrace();
 				exception = true;
 			}
+
 		} while (exception);
+		saveToXML(infos, donePairs);
 
 	}
 
