@@ -50,9 +50,11 @@ public class Categorize {
 
 
 		boolean exception;
-		Set<String> donePairs = new HashSet<String>();
+
 		do {
 			exception = false;
+			Map<String, Link> infos = new HashMap<String, Link>();
+			Set<String> donePairs = new HashSet<String>();
 			try {
 
 				State state = loadState();
@@ -68,12 +70,13 @@ public class Categorize {
 				final Map<String, Double> sizes = loadURLSize(links);
 				List<String> sortedBins = sortBinBySize(binUrl2SourceUrl, sizes);
 
-				Map<String, Link> infos = getInfo(binUrl2SourceUrl, sortedBins, links, donePairs);
+				infos.putAll(links);
+				getInfo(infos, binUrl2SourceUrl, sortedBins, links, donePairs);
 
-				saveToXML(infos, donePairs);
 
 			} catch (Exception e) {
 				System.out.println("EXCEPTION FOUND. RESTARTING..");
+				saveToXML(infos, donePairs);
 				e.printStackTrace();
 				exception = true;
 			}
@@ -81,9 +84,8 @@ public class Categorize {
 
 	}
 
-	private static Map<String, Link> getInfo(Map<String, String> binUrl2SourceUrl,
+	private static void getInfo(Map<String, Link> infos, Map<String, String> binUrl2SourceUrl,
 			List<String> sortedBins, Map<String, Link> links, Set<String> donePairs) throws Exception {
-		Map<String, Link> result = new HashMap<String, Link>(links);
 
 		// Process bin Urls in order
 		DefaultHttpClient httpclient = new DefaultHttpClient();
@@ -98,15 +100,12 @@ public class Categorize {
 			// Debug and saving point
 			System.out.println("\nsrc: "+src.substring("http://archive.apache.org/dist/".length())+";     bin:"+bin.substring("http://archive.apache.org/dist/".length()) );
 			System.out.println("percent=" + i +"/" + sortedBins.size() + "=" + (int)((double)i*100/sortedBins.size()));
-			if (i % 10 == 0 && i > 0) {
-				saveToXML(result, donePairs);
-			}
 
 			// source file
-			Link info1 = result.get(src);
+			Link info1 = infos.get(src);
 	        if (info1 == null || info1.getMd5() == null || info1.getNames() == null) {
-	        	info1 = getFileInfo(httpclient, src, result);
-	        	result.put(src, info1);
+	        	info1 = getFileInfo(httpclient, src, infos);
+	        	infos.put(src, info1);
 	        }
 	        boolean isJavaSourceFile = false;
 	        List<String> javanames = info1.getNames();
@@ -119,14 +118,12 @@ public class Categorize {
 
         	// binary file
 	        if (isJavaSourceFile) {
-	        	processBinFile(result, httpclient, bin, src, javanames);
+	        	processBinFile(infos, httpclient, bin, src, javanames);
 	        }
 
 	        // avoid duplicate
         	donePairs.add(pair);
 		}
-
-		return result;
 	}
 
 	private static void processBinFile(Map<String, Link> result,
