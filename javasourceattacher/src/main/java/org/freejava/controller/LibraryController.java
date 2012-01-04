@@ -65,7 +65,7 @@ public class LibraryController {
 			srcBundles = new ArrayList<Bundle>();
 		} else {
 			Map<String, Object[]> values = new Hashtable<String, Object[]>();
-			values.put("bundleId", srcIds.toArray());
+			values.put("id", srcIds.toArray());
 			srcBundles = bundleManager.findByConditions(values);
 		}
 
