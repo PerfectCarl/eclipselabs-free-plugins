@@ -29,6 +29,9 @@
         <td>origin:</td><td><input type="text" name="origin"></td>
       </tr>
       <tr>
+        <td>sourceId:</td><td><input type="text" name="sourceId"></td>
+      </tr>
+      <tr>
         <td><input type=submit value=Submit></td>
       </tr>
     </table>
@@ -50,31 +53,31 @@
       </tr>
     </table>
     </form>
-    
-    
+
+
     <script type="text/javascript">
 $(function(){
 
 	$.getJSON('${pageContext.request.contextPath}/rest/bundles/1', function(data) {
-			console.dir(data)	  
-	});	
-	
+			console.dir(data)
+	});
+
 	$.getJSON('${pageContext.request.contextPath}/rest/bundles', function(data) {
-		console.dir(data)	  
-	});	
+		console.dir(data)
+	});
 
 	$.getJSON('${pageContext.request.contextPath}/rest/locations/2', function(data) {
-		console.dir(data)	  
-	});	
-	
+		console.dir(data)
+	});
+
 	$.getJSON('${pageContext.request.contextPath}/rest/locations', function(data) {
-		console.dir(data)	  
-	});	
+		console.dir(data)
+	});
 
 
 });
 
 
-    </script>    
+    </script>
   </body>
 </html>
