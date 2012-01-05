@@ -46,5 +46,8 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="GROOVY_SUPPORT"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/javasourceattacher"/>
+	<classpathentry kind="var" path="M2_REPO/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb.jar"/>
+	<classpathentry exported="true" kind="con" path="GROOVY_DSL_SUPPORT"/>
+	<classpathentry kind="var" path="M2_REPO/javax/persistence/persistence-api/1.0/persistence-api-1.0.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
