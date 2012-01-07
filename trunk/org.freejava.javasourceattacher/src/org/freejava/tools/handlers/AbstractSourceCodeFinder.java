@@ -66,7 +66,8 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 	}
 
 
-    protected static boolean isSourceCodeFor(String src, String bin) {
+    @SuppressWarnings("rawtypes")
+	protected static boolean isSourceCodeFor(String src, String bin) {
         boolean result = false;
         try {
 	        List<String> binList = new ArrayList<String>();

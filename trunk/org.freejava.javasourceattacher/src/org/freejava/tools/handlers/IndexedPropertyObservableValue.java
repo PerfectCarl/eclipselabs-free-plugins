@@ -18,7 +18,6 @@ public class IndexedPropertyObservableValue extends AbstractObservableValue {
 		this.index = index;
 	}
 
-	@Override
 	public Object getValueType() {
 		Object valueType = null;
 		try {
