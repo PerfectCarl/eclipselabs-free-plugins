@@ -27,6 +27,8 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 public class JavaSourceAttacherHandler extends AbstractHandler {
@@ -94,10 +96,11 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         }
 
         // Process valid requests in background
+		final Shell shell = HandlerUtil.getActiveWorkbenchWindow(event).getShell();
         if (!selections.isEmpty()) {
 	        Job job = new Job("Attaching source to library...") {
 	            protected IStatus run(IProgressMonitor monitor) {
-	                return updateSourceAttachments(selections, monitor);
+	                return updateSourceAttachments(selections, monitor, shell);
 	            }
 	        };
 	        job.setPriority(Job.LONG);
@@ -107,7 +110,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return null;
     }
 
-    private static IStatus updateSourceAttachments(List<IPackageFragmentRoot> roots, IProgressMonitor monitor) {
+    private static IStatus updateSourceAttachments(List<IPackageFragmentRoot> roots, IProgressMonitor monitor, final Shell shell) {
 
         // Process valid selections
     	Map<String, IPackageFragmentRoot> requests = new HashMap<String, IPackageFragmentRoot>();
@@ -125,8 +128,19 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 			}
         }
 
-        Set<String> notProcessedLibs = new HashSet<String>();
+        final Set<String> notProcessedLibs = new HashSet<String>();
         notProcessedLibs.addAll(requests.keySet());
+
+        //TODO: remove this
+    	Display.getDefault().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+	        	SourceCodeLocationDialog dialog = new SourceCodeLocationDialog(
+	        			shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
+	        	dialog.open();
+	        	dialog.setFocus();
+			}
+		});
 
         List<SourceFileResult> responses = Collections.synchronizedList(new ArrayList<SourceFileResult>());
         List<String> libs = new ArrayList<String>();
@@ -149,6 +163,20 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         if (!notProcessedLibs.isEmpty()) {
         	processLibSources(requests, notProcessedLibs, responses);
         }
+
+        // Source not found
+        if (!notProcessedLibs.isEmpty()) {
+        	Display.getDefault().asyncExec(new Runnable() {
+    			@Override
+    			public void run() {
+    	        	SourceCodeLocationDialog dialog = new SourceCodeLocationDialog(
+    	        			shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
+    	        	dialog.open();
+    	        	dialog.setFocus();
+    			}
+    		});
+        }
+
 
         return Status.OK_STATUS;
     }
