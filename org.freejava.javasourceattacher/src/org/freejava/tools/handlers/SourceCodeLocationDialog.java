@@ -150,7 +150,6 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 			IObservableValue modelObservable2 = new IndexedPropertyObservableValue(model, "sources", i);
 			ISWTObservableValue swtObservable2 = SWTObservables.observeText(sources[i], SWT.Modify);
 			IValidator validator2 = new IValidator() {
-				@Override
 				public IStatus validate(Object value) {
 					if (value instanceof String) {
 						String s = value.toString();

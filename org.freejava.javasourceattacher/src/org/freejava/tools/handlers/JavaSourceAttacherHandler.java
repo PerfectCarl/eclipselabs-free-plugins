@@ -156,7 +156,6 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         // Source not found
         if (!notProcessedLibs.isEmpty()) {
         	Display.getDefault().asyncExec(new Runnable() {
-    			@Override
     			public void run() {
     	        	SourceCodeLocationDialog dialog = new SourceCodeLocationDialog(
     	        			shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
