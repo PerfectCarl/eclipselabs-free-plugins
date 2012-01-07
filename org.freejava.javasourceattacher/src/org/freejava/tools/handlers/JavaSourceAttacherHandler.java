@@ -131,17 +131,6 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         final Set<String> notProcessedLibs = new HashSet<String>();
         notProcessedLibs.addAll(requests.keySet());
 
-        //TODO: remove this
-    	Display.getDefault().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-	        	SourceCodeLocationDialog dialog = new SourceCodeLocationDialog(
-	        			shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
-	        	dialog.open();
-	        	dialog.setFocus();
-			}
-		});
-
         List<SourceFileResult> responses = Collections.synchronizedList(new ArrayList<SourceFileResult>());
         List<String> libs = new ArrayList<String>();
         libs.addAll(requests.keySet());
@@ -172,7 +161,6 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
     	        	SourceCodeLocationDialog dialog = new SourceCodeLocationDialog(
     	        			shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
     	        	dialog.open();
-    	        	dialog.setFocus();
     			}
     		});
         }
