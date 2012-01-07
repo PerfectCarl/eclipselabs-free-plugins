@@ -107,6 +107,27 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 			binaries[i].setLayoutData(gridData);
 			binaries[i].setText(libPaths[i]);
 			binaries[i].setToolTipText("Do not change this value.");
+
+			IObservableValue modelObservable1 = new IndexedPropertyObservableValue(model, "binaries", i);
+			ISWTObservableValue swtObservable1 = SWTObservables.observeText(binaries[i], SWT.Modify);
+			IValidator validator1 = new IValidator() {
+				public IStatus validate(Object value) {
+					if (value instanceof String) {
+						String s = value.toString();
+						if (StringUtils.isNotBlank(s) && new File(s).exists()) {
+							return ValidationStatus.ok();
+						}
+					}
+					return ValidationStatus.error("Not a valid file path.");
+				}
+			};
+			UpdateValueStrategy strategy1 = new UpdateValueStrategy();
+			strategy1.setBeforeSetValidator(validator1);
+			Binding bindValue1 = dbc.bindValue(swtObservable1, modelObservable1, strategy1, null);
+			// Add some decorations
+			ControlDecorationSupport.create(bindValue1, SWT.TOP | SWT.LEFT);
+
+
 			final Text fileText = binaries[i];
 			link.addListener (SWT.Selection, new Listener() {
 				public void handleEvent(Event event) {
@@ -166,7 +187,7 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 			// Add some decorations
 			ControlDecorationSupport.create(bindValue2, SWT.TOP | SWT.LEFT);
 
-			if (i == 0) binaries[i].setFocus();
+			if (i == 0) sources[i].setFocus();
 
 		}
 
