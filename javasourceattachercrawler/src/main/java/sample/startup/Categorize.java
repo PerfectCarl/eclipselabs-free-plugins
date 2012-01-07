@@ -80,7 +80,7 @@ public class Categorize {
 				"/logging/log4cxx/", "/logging/log4net/", "/logging/log4php/",
 				"/ws/axis2-c/", "/ws/axis2/c/", "/xml/xalan-c/", "/xml/xerces-c/", "/jk2/",
 				"/jk/",  "/subversion/", "/spamassassin/", "/jserv/", "/ooo/", "/buildr/",
-				"/ws/woden/1.0m9/", "pluto-1.0.1.zip",
+				"/ws/woden/1.0m9/", "pluto-1.0.1.zip", "poi-src-2.0-rc1-20031102.zip",
 				"/harmony/", "current", "previous", "latest", "-docs", "-javadoc", "-manual"};
 
 		for (Map.Entry<String, Link> entry : links.entrySet()) {
@@ -123,7 +123,7 @@ public class Categorize {
 					throws Exception {
 
 		// Create a bounded blocking queue
-		final int numWorkers = 3;
+		final int numWorkers = 5;
 		BlockingQueue<Map<String, Object>> queue = new LinkedBlockingQueue<Map<String, Object>>();
 		Map<String, String> bin2SrcMap = buildBinUrl2SourceUrlMap(inOutput);
 		List<String> bin2SrcMapOrder = sortBinBySize(bin2SrcMap, inOutput);
