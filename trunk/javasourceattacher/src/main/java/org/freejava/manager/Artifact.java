@@ -1,4 +1,4 @@
-package org.freejava.controller;
+package org.freejava.manager;
 
 import java.util.Set;
 

@@ -1,4 +1,4 @@
-package org.freejava.controller;
+package org.freejava.manager;
 
 public class LibraryArtifact extends Artifact {
 	private Artifact source;
