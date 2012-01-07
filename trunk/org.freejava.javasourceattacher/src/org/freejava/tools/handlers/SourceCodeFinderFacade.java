@@ -48,8 +48,8 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 			new NexusSourceCodeFinder("http://maven.alfresco.com/nexus/index.html"),
 			new ArtifactorySourceCodeFinder("https://repository.cloudera.com/artifactory/webapp/home.html"),
 			new NexusSourceCodeFinder("http://nexus.xwiki.org/nexus/index.html"),
-			new SourceAttacherServiceSourceCodeFinder(),
-			new GoogleSourceCodeFinder()
+			new SourceAttacherServiceSourceCodeFinder()//,
+			//new GoogleSourceCodeFinder()
 	};
 
 	private boolean canceled;
