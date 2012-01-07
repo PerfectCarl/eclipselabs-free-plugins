@@ -95,7 +95,7 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 			gridData = new GridData();
 			gridData.widthHint = 120;
 			link = new Link(composite, SWT.LEFT);
-			link.setText("Library (<a>Search by file's MD5</a>):");
+			link.setText("Library (<a>Search by MD5 digest</a>):");
 			link.setLayoutData(gridData);
 
 			binaries[i] = new Text(composite, SWT.SINGLE | SWT.BORDER);
@@ -113,7 +113,7 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 					try {
 						File file = new File(fileText.getText());
 						String md5 = DigestUtils.md5Hex(Files.getDigest(file, MessageDigest.getInstance("MD5")));
-						URL url = new URL( "http://www.google.com/?q=" + URLEncoder.encode(md5, "UTF-8"));
+						URL url = new URL( "http://www.google.com/search?q=" + URLEncoder.encode(md5, "UTF-8"));
 						int style = IWorkbenchBrowserSupport.AS_EXTERNAL
 								| IWorkbenchBrowserSupport.NAVIGATION_BAR;
 						IWorkbenchBrowserSupport wbbs = PlatformUI.getWorkbench()
@@ -181,10 +181,6 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 		Control buttonBar = super.createButtonBar(parent);
 		getButton(IDialogConstants.OK_ID).setEnabled(true);
 		return buttonBar;
-	}
-
-	public void setFocus() {
-		this.sources[0].setFocus();
 	}
 
 	@Override
