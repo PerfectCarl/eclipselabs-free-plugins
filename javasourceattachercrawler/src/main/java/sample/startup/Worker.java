@@ -378,6 +378,8 @@ public class Worker extends Thread {
 				if (entry == null) break;
 				if (entry.getName().endsWith(".class") || entry.getName().endsWith(".java")) names.add(entry.getName());
 			} while (true);
+		} catch (IllegalArgumentException e) {
+			// ignore it
 		} finally {
 			IOUtils.closeQuietly(zis);
 			IOUtils.closeQuietly(is);
