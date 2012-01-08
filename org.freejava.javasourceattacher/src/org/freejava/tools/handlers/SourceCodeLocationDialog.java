@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.validator.UrlValidator;
 import org.eclipse.core.databinding.Binding;
 import org.eclipse.core.databinding.DataBindingContext;
 import org.eclipse.core.databinding.UpdateValueStrategy;
@@ -114,7 +115,9 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 				public IStatus validate(Object value) {
 					if (value instanceof String) {
 						String s = value.toString();
-						if (StringUtils.isNotBlank(s) && new File(s).exists()) {
+						 String[] schemes = {"http","https"};
+					     UrlValidator urlValidator = new UrlValidator(schemes);
+						if (StringUtils.isNotBlank(s) && (urlValidator.isValid(s) || new File(s).exists())) {
 							return ValidationStatus.ok();
 						}
 					}
@@ -174,7 +177,9 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 				public IStatus validate(Object value) {
 					if (value instanceof String) {
 						String s = value.toString();
-						if (StringUtils.isBlank(s) || s.matches("^http*")) {
+						 String[] schemes = {"http","https"};
+					     UrlValidator urlValidator = new UrlValidator(schemes);
+						if (StringUtils.isBlank(s) || urlValidator.isValid(s)) {
 							return ValidationStatus.ok();
 						}
 					}
@@ -206,6 +211,12 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 	@Override
 	protected void okPressed() {
 		try {
+
+			for (int i = 0; i < this.model.getBinaries().length; i++) {
+				String binPath = this.model.getBinaries()[i];
+				String srcUrl = this.model.getSources()[i];
+				SourceCheck.proposeSourceLink(binPath, srcUrl);
+			}
 
 			super.okPressed();
 		} catch (Exception e) {
