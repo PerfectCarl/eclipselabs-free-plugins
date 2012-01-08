@@ -14,6 +14,9 @@ import org.apache.commons.io.IOUtils;
 
 public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
+	public  static final String SERVICE = "http://javasourceattacher2.appspot.com";//http://localhost:8080
+	//public  static final String SERVICE = "http://localhost:8080";//
+
 	private boolean canceled = false;
 
     public SourceAttacherServiceSourceCodeFinder() {
@@ -37,7 +40,7 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 	        String md5;
 	        try {
 	            md5 = DigestUtils.md5Hex(is);
-	        	is2 = new URL("http://javasourceattacher2.appspot.com/rest/libraries?md5=" + md5).openStream();
+	        	is2 = new URL(SERVICE + "/rest/libraries?md5=" + md5).openStream();
 	        	String str = IOUtils.toString(is2);
 	        	JSONArray json = JSONArray.fromObject(str);
 
@@ -61,7 +64,7 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 
 		        if (url != null && fileDownloaded != null) {
 		        	String name = url.substring(url.lastIndexOf('/') + 1);
-		    		results.add(new SourceFileResult(binFile, fileDownloaded, name, 50));
+		    		results.add(new SourceFileResult(binFile, fileDownloaded, name, 90));
 		        }
 
 	        } finally {
