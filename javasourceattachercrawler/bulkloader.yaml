@@ -48,8 +48,7 @@ transformers:
     style: element_centric
   property_map:
     - property: __key__
-      external_name: key
-      export_transform: transform.key_id_or_name_as_string
+      external_name: id
 
     - property: origin
       external_name: origin
