@@ -39,11 +39,13 @@ public class LibraryManagerImpl implements LibraryManager {
 		src_bundle.setSha1(src_sha1);
 		src_bundle = bundleManager.add(src_bundle);
 
-		for (String  url : urls) {
-			Location location = new Location();
-			location.setBundleId(src_bundle.getId());
-			location.setUrl(url);
-			location = locationManager.add(location);
+		if (src_urls != null) {
+			for (String  url : src_urls) {
+				Location location = new Location();
+				location.setBundleId(src_bundle.getId());
+				location.setUrl(url);
+				location = locationManager.add(location);
+			}
 		}
 
 		Bundle bundle = new Bundle();
@@ -53,11 +55,13 @@ public class LibraryManagerImpl implements LibraryManager {
 		bundle.setSourceId(src_bundle.getId());
 		bundle = bundleManager.add(bundle);
 
-		for (String  url : urls) {
-			Location location = new Location();
-			location.setBundleId(bundle.getId());
-			location.setUrl(url);
-			location = locationManager.add(location);
+		if (urls != null) {
+			for (String  url : urls) {
+				Location location = new Location();
+				location.setBundleId(bundle.getId());
+				location.setUrl(url);
+				location = locationManager.add(location);
+			}
 		}
 
 		return bundle;
