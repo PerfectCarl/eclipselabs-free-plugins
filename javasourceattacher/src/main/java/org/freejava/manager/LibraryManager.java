@@ -10,6 +10,6 @@ public interface LibraryManager {
 			String src_origin, String src_md5, String src_sha1,
 			String[] src_urls);
 
-	List<LibraryArtifact> findLibrary(String md5, String sha1, String origin);
+	List<LibraryArtifact> findLibrary(String md5, String sha1, String origin) throws Exception;
 
 }
