@@ -11,6 +11,8 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
 import org.freejava.dao.GenericDao;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * A Generic DAO class.
@@ -18,6 +20,8 @@ import org.freejava.dao.GenericDao;
  * @param <T> entity type
  * @param <ID> primary key type
  */
+@Repository
+@Transactional
 public abstract class GenericDaoImpl <T, ID extends Serializable>
         implements GenericDao<T, ID> {
 
@@ -80,6 +84,7 @@ public abstract class GenericDaoImpl <T, ID extends Serializable>
             }
             ejbqlString += " where " + criteria;
         }
+        System.out.println(ejbqlString + ";" + paramValues );
         Query query = entityManager.createQuery(ejbqlString);
         for (int i = 0; i < paramValues.size(); i++) {
             query.setParameter(i + 1, paramValues.get(i));

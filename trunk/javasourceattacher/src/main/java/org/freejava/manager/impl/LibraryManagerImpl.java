@@ -69,7 +69,7 @@ public class LibraryManagerImpl implements LibraryManager {
 
 	@Override
 	public List<LibraryArtifact> findLibrary(String md5, String sha1,
-			String origin) {
+			String origin) throws Exception {
 
 		List<LibraryArtifact> result;
 		Map<String, Object[]> criteriaValues = new Hashtable<String, Object[]>();
@@ -94,12 +94,11 @@ public class LibraryManagerImpl implements LibraryManager {
 
 		// source bundles
 		List<Bundle> srcBundles;
-		if (srcIds.isEmpty()) {
-			srcBundles = new ArrayList<Bundle>();
-		} else {
-			Map<String, Object[]> values = new Hashtable<String, Object[]>();
-			values.put("id", srcIds.toArray());
-			srcBundles = bundleManager.findByConditions(values);
+		srcBundles = new ArrayList<Bundle>();
+		if (!srcIds.isEmpty()) {
+			for (int i = 0; i < srcIds.size(); i++) {
+				srcBundles.add(bundleManager.findById(srcIds.get(i)));
+			}
 		}
 
 		// locations for all bundles
@@ -141,7 +140,7 @@ public class LibraryManagerImpl implements LibraryManager {
 
 					Set<String> srcurls = new HashSet<String>();
 					for (Location location : locations) {
-						if (location.getBundleId().equals(bundle.getId())) {
+						if (location.getBundleId().equals(srcBundle.getId())) {
 							srcurls.add(location.getUrl());
 						}
 					}
