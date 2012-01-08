@@ -178,14 +178,6 @@ public class Worker extends Thread {
         }
 	}
 
-	private static void processBinFile(Map<String, Link> result,
-			HttpClient httpclient, String bin, String src,
-			List<String> javanames) throws Exception {
-
-
-	}
-
-
 	private static void processJarFile(
 			Map<String, Link> result,
 			String src, List<String> javanames,
