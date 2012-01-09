@@ -11,6 +11,8 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
 import org.freejava.dao.GenericDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public abstract class GenericDaoImpl <T, ID extends Serializable>
         implements GenericDao<T, ID> {
+
+	private static final Logger LOGGER = LoggerFactory
+			.getLogger(GenericDaoImpl.class);
 
     private Class<T> persistentClass;
 
@@ -84,7 +89,7 @@ public abstract class GenericDaoImpl <T, ID extends Serializable>
             }
             ejbqlString += " where " + criteria;
         }
-        System.out.println(ejbqlString + ";" + paramValues );
+        LOGGER.debug(ejbqlString + ";" + paramValues );
         Query query = entityManager.createQuery(ejbqlString);
         for (int i = 0; i < paramValues.size(); i++) {
             query.setParameter(i + 1, paramValues.get(i));
