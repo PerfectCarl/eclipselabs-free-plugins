@@ -15,11 +15,15 @@ import org.freejava.manager.LibraryManager;
 import org.freejava.manager.LocationManager;
 import org.freejava.model.Bundle;
 import org.freejava.model.Location;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class LibraryManagerImpl implements LibraryManager {
+	private static final Logger LOGGER = LoggerFactory
+			.getLogger(LibraryManagerImpl.class);
 
 	@Autowired
 	private BundleManager bundleManager;
@@ -89,15 +93,20 @@ public class LibraryManagerImpl implements LibraryManager {
 			bundleIds.add(bundle.getId());
 			if (bundle.getSourceId() != null) {
 				srcIds.add(bundle.getSourceId());
+				LOGGER.info("bundleId: " +  bundle.getId() + " --> source bundleId: " + bundle.getSourceId());
 			}
 		}
 
 		// source bundles
-		List<Bundle> srcBundles;
-		srcBundles = new ArrayList<Bundle>();
+		List<Bundle> srcBundles = new ArrayList<Bundle>();
 		if (!srcIds.isEmpty()) {
 			for (int i = 0; i < srcIds.size(); i++) {
-				srcBundles.add(bundleManager.findById(srcIds.get(i)));
+				Bundle srcBundle = bundleManager.findById(srcIds.get(i));
+				if (srcBundle != null) {
+					srcBundles.add(srcBundle);
+				} else {
+					LOGGER.warn("Not found bundle for bundleId:" +  srcIds.get(i));
+				}
 			}
 		}
 
@@ -145,6 +154,9 @@ public class LibraryManagerImpl implements LibraryManager {
 						}
 					}
 					srcArtifact.setUrls(srcurls);
+					if (srcurls.isEmpty()) {
+						LOGGER.warn("Not found any URL for source bundleId:" +  srcBundle.getId());
+					}
 
 					lib.setSource(srcArtifact);
 					break;
