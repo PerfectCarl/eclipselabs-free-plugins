@@ -8,7 +8,6 @@ import org.freejava.manager.BundleManager;
 import org.freejava.model.Bundle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -34,6 +33,12 @@ public class BundleManagerImpl implements BundleManager {
 	@Override
 	public List<Bundle> findByConditions(Map<String, Object[]> criteriaValues) {
 		List<Bundle> result = bundleDao.findByCriteria(criteriaValues, 0, 10);
+		return result;
+	}
+
+	@Override
+	public Long findMaxId() {
+		Long result = bundleDao.findMaxId();
 		return result;
 	}
 

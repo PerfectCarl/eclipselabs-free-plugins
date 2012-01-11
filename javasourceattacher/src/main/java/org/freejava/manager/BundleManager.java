@@ -9,4 +9,5 @@ public interface BundleManager {
 	Bundle add(Bundle bundle);
 	Bundle findById(long id) throws Exception;
 	List<Bundle> findByConditions(Map<String, Object[]> criteriaValues);
+	Long findMaxId();
 }

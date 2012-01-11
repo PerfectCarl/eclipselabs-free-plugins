@@ -76,4 +76,9 @@ public class BundleController {
 		return manager.findById(id);
 	}
 
+	@RequestMapping(value = "/max", method = RequestMethod.GET)
+	@ResponseBody
+	public Long max() throws Exception {
+		return manager.findMaxId();
+	}
 }
