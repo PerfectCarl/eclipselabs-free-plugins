@@ -1,5 +1,7 @@
 package org.freejava.tools.handlers.classpathutil;
 
+import java.io.File;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
@@ -66,6 +68,12 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 			IClasspathEntry entry;
 			CPListElement elem= CPListElement.createFromExisting(fEntry, null);
 			IPath srcAttPath = Path.fromOSString(newSourcePath).makeAbsolute();
+			if (fEntry.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
+	        	File sourceAttacherDir = new File(newSourcePath).getParentFile();
+	            JavaCore.setClasspathVariable("SOURCE_ATTACHER",
+	                    new Path(sourceAttacherDir.getAbsolutePath()), null);
+	            srcAttPath = new Path("SOURCE_ATTACHER/" + new File(newSourcePath).getName());
+			}
 			elem.setAttribute(CPListElement.SOURCEATTACHMENT, srcAttPath);
 			entry = elem.getClasspathEntry();
 
