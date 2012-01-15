@@ -2,7 +2,7 @@
 <feature
       id="org.freejava.javasourceattacher.feature"
       label="Java Source Attacher Feature"
-      version="1.1.0.0"
+      version="1.2.0.0"
       provider-name="Thai Ha">
 
    <description url="http://svn.codespot.com/a/eclipselabs.org/free-plugins/">
@@ -40,6 +40,7 @@ Enjoy!
          download-size="0"
          install-size="0"
          version="0.0.0"
+         fragment="true"
          unpack="false"/>
 
 </feature>

@@ -17,19 +17,20 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.freejava.tools.handlers.classpathutil.Logger;
+import org.freejava.tools.handlers.classpathutil.MySourceAttacher;
+import org.freejava.tools.handlers.classpathutil.SourceAttacher;
 
 public class JavaSourceAttacherHandler extends AbstractHandler {
     /**
@@ -181,78 +182,32 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 				String suggestedSourceFileName = response.getSuggestedSourceFileName();
 				// attach source to library
 				try {
-					attachSource(pkgRoot, source, suggestedSourceFileName, null);
+					File sourceAttacherDir = new File(System.getProperty("user.home")
+			                + File.separatorChar + ".sourceattacher");
+			        if (!sourceAttacherDir.exists()) sourceAttacherDir.mkdirs();
+			        File sourceFile = new File(sourceAttacherDir, suggestedSourceFileName);
+			        if (!sourceFile.exists()) {
+			        	FileUtils.copyFile(new File(source), sourceFile);
+			        }
+					attachSource(pkgRoot, sourceFile.getAbsolutePath());
 				} catch (Exception e) {
 					// ignore
-					e.printStackTrace();
+					Logger.debug("Cannot attach to " + pkgRoot.getResource().getLocation().toOSString(), e);
 				}
 			}
 		}
 	}
-
-	private static void attachSource(IPackageFragmentRoot root, String sourcePath, String suggestedSourceFileName, String sourceRoot) throws Exception {
-
-		File sourceAttacherDir = new File(System.getProperty("user.home")
-                + File.separatorChar + ".sourceattacher");
-        if (!sourceAttacherDir.exists()) sourceAttacherDir.mkdirs();
-        File sourceFile = new File(sourceAttacherDir, suggestedSourceFileName);
-        if (!sourceFile.exists()) {
-        	FileUtils.copyFile(new File(sourcePath), sourceFile);
-        }
-        sourcePath = sourceFile.getAbsolutePath();
-
-        IJavaProject javaProject = root.getJavaProject();
-        IClasspathEntry[] entries = (IClasspathEntry[]) javaProject.getRawClasspath().clone();
-        boolean attached = false;
-        for (int i = 0; i < entries.length; i++) {
-            IClasspathEntry entry = entries[i];
-            String entryPath;
-            if (entry.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
-                entryPath = JavaCore.getResolvedVariablePath(entry.getPath()).toOSString();
-            } else {
-                entryPath = entry.getPath().toOSString();
-            }
-            String rootPath = root.getPath().toOSString();
-            if (entryPath.equals(rootPath)) {
-                entries[i] = addSourceAttachment(root, entries[i], sourcePath, sourceAttacherDir, sourceRoot);
-                attached = true;
-                break;
-            }
-        }
-        if (!attached) {
-        	root.attachSource(new Path(sourcePath), null, null);
-        } else {
-        }
-    	javaProject.setRawClasspath(entries, null);
-    }
-
-    private static IClasspathEntry addSourceAttachment(
-            IPackageFragmentRoot root, IClasspathEntry entry,
-            String sourcePath, File sourceAttacherDir, String sourceRoot) throws Exception {
-    	IClasspathEntry result;
-        int entryKind = entry.getEntryKind();
-        // CPE_PROJECT, CPE_LIBRARY, CPE_SOURCE, CPE_VARIABLE or CPE_CONTAINER
-        switch (entryKind) {
-        case IClasspathEntry.CPE_LIBRARY:
-            result = JavaCore.newLibraryEntry(entry.getPath(),
-                    sourcePath == null ? null : new Path(sourcePath),
-                    sourceRoot == null ? null : new Path(sourceRoot),
-                    entry.getAccessRules(), entry.getExtraAttributes(),
-                    entry.isExported());
-            break;
-        case IClasspathEntry.CPE_VARIABLE:
-            JavaCore.setClasspathVariable("SOURCE_ATTACHER",
-                    new Path(sourceAttacherDir.getAbsolutePath()), null);
-            Path varAttPath = new Path("SOURCE_ATTACHER/"
-                    + new File(sourcePath).getName());
-            result = JavaCore.newVariableEntry(entry.getPath(), varAttPath,
-                    sourceRoot == null ? null : new Path(sourceRoot),
-                    entry.getAccessRules(), entry.getExtraAttributes(),
-                    entry.isExported());
-            break;
-        default:
-            result = entry;
-        }
-        return result;
-    }
+	private static void attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
+		SourceAttacher attacher;
+		try {
+			attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl").newInstance();
+			attacher.attachSource(root, sourcePath);
+			Logger.debug("Attached (type 1) " + sourcePath, null);
+		} catch (Exception e) {
+			Logger.debug("Cannot attach to " + sourcePath, e);
+			attacher = new MySourceAttacher();
+			attacher.attachSource(root, sourcePath);
+			Logger.debug("Attached (type 2) " + sourcePath, null);
+		}
+	}
 }
