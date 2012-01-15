@@ -2,14 +2,14 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Java Source Attacher
 Bundle-SymbolicName: org.freejava.javasourceattacher; singleton:=true
-Bundle-Version: 1.1.0
+Bundle-Version: 1.2.0
+Fragment-Host: org.eclipse.jdt.ui
 Bundle-Vendor: FreeJava
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.resources,
  org.eclipse.jdt,
  org.eclipse.jdt.core,
  org.eclipse.core.runtime,
- org.junit,
  org.eclipse.core.databinding,
  org.eclipse.core.databinding.beans,
  org.eclipse.jface.databinding
