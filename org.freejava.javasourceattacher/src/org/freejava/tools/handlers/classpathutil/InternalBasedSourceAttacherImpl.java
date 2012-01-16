@@ -44,18 +44,22 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 			IJavaProject jproject= fRoot.getJavaProject();
 
 			// workaround for 3.5
+			boolean ise35 = true;
 			IClasspathEntry entry0;
 			try {
 				entry0 = (IClasspathEntry) MethodUtils.invokeExactStaticMethod(JavaModelUtil.class, "getClasspathEntry", new Object[] {fRoot}, new Class[] {IPackageFragmentRoot.class});
+				ise35 = false;
 			} catch (NoSuchMethodException e) {
-				entry0 = getClasspathEntry(fRoot);
+				entry0 = fRoot.getRawClasspathEntry();
 			} catch (IllegalAccessException e) {
-				entry0 = getClasspathEntry(fRoot);
+				entry0 = fRoot.getRawClasspathEntry();
 			} catch (InvocationTargetException e) {
-				entry0 = getClasspathEntry(fRoot);
+				entry0 = fRoot.getRawClasspathEntry();
 			}
 
-			if (entry0.getEntryKind() == IClasspathEntry.CPE_CONTAINER) {
+			if (ise35 && entry0 == null) {
+				entry0= JavaCore.newLibraryEntry(fRoot.getPath(), null, null);
+			} else if (!ise35 && entry0.getEntryKind() == IClasspathEntry.CPE_CONTAINER || ise35 && entry0 != null) {
 				containerPath= entry0.getPath();
 				ClasspathContainerInitializer initializer= JavaCore.getClasspathContainerInitializer(containerPath.segment(0));
 				IClasspathContainer container= JavaCore.getClasspathContainer(containerPath, jproject);
@@ -149,29 +153,4 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 		}
 	}
 
-	/**
-	 * 3.6 method is copied here to support older version (3.5)
-	 *
-	 * @param root
-	 * @return
-	 * @throws JavaModelException
-	 * @since 3.6
-	 */
-	private static IClasspathEntry getClasspathEntry(IPackageFragmentRoot root) throws JavaModelException {
-		IClasspathEntry rawEntry= root.getRawClasspathEntry();
-		int rawEntryKind= rawEntry.getEntryKind();
-		switch (rawEntryKind) {
-			case IClasspathEntry.CPE_LIBRARY:
-			case IClasspathEntry.CPE_VARIABLE:
-			case IClasspathEntry.CPE_CONTAINER: // should not happen, see https://bugs.eclipse.org/bugs/show_bug.cgi?id=305037
-				if (root.isArchive() && root.getKind() == IPackageFragmentRoot.K_BINARY) {
-					IClasspathEntry resolvedEntry= root.getResolvedClasspathEntry();
-					if (resolvedEntry.getReferencingEntry() != null)
-						return resolvedEntry;
-					else
-						return rawEntry;
-				}
-		}
-		return rawEntry;
-	}
 }
