@@ -203,7 +203,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 			attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl").newInstance();
 			attacher.attachSource(root, sourcePath);
 			Logger.debug("Attached (type 1) " + sourcePath, null);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			Logger.debug("Cannot attach to " + sourcePath, e);
 			attacher = new MySourceAttacher();
 			attacher.attachSource(root, sourcePath);
