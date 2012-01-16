@@ -21,8 +21,9 @@ public class SourceCodeLocationDialogModel {
 	private String[] sources;
 
 	public SourceCodeLocationDialogModel(String[] binaries) {
-		this.binaries = Arrays.copyOf(binaries, binaries.length);
-		this.sources = Arrays.copyOf(binaries, binaries.length);
+		this.binaries = new String[binaries.length];
+		for (int i = 0; i < binaries.length; i++) this.binaries[i] = binaries[i];
+		this.sources = new String[binaries.length];
 		Arrays.fill(this.sources, "");
 	}
 

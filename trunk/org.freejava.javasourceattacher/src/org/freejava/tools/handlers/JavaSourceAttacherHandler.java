@@ -200,14 +200,22 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 	private static void attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
 		SourceAttacher attacher;
 		try {
-			attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl").newInstance();
+			attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl36").newInstance();
 			attacher.attachSource(root, sourcePath);
 			Logger.debug("Attached (type 1) " + sourcePath, null);
 		} catch (Throwable e) {
 			Logger.debug("Cannot attach to " + sourcePath, e);
-			attacher = new MySourceAttacher();
-			attacher.attachSource(root, sourcePath);
-			Logger.debug("Attached (type 2) " + sourcePath, null);
+			try {
+				attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl35").newInstance();
+				attacher.attachSource(root, sourcePath);
+				Logger.debug("Attached (type 2) " + sourcePath, null);
+			} catch (Throwable e2) {
+				Logger.debug("Cannot attach to " + sourcePath, e2);
+				attacher = new MySourceAttacher();
+				attacher.attachSource(root, sourcePath);
+				Logger.debug("Attached (type 3) " + sourcePath, null);
+			}
+
 		}
 	}
 }

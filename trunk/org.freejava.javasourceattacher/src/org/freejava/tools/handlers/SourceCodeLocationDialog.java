@@ -6,6 +6,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 
+import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.UrlValidator;
@@ -16,7 +17,6 @@ import org.eclipse.core.databinding.observable.value.IObservableValue;
 import org.eclipse.core.databinding.validation.IValidator;
 import org.eclipse.core.databinding.validation.ValidationStatus;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport;
 import org.eclipse.jface.databinding.swt.ISWTObservableValue;
 import org.eclipse.jface.databinding.swt.SWTObservables;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -35,6 +35,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWebBrowser;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
+import org.freejava.tools.handlers.classpathutil.Logger;
 
 import com.google.common.io.Files;
 
@@ -128,8 +129,12 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 			strategy1.setBeforeSetValidator(validator1);
 			Binding bindValue1 = dbc.bindValue(swtObservable1, modelObservable1, strategy1, null);
 			// Add some decorations
-			ControlDecorationSupport.create(bindValue1, SWT.TOP | SWT.LEFT);
-
+			try {
+			MethodUtils.invokeExactMethod(Class.forName("org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport"),
+					"create", new Object[]{bindValue1, SWT.TOP | SWT.LEFT});
+			} catch (Exception e) {
+				Logger.debug("ignored!", e);
+			}
 
 			final Text fileText = binaries[i];
 			link.addListener (SWT.Selection, new Listener() {
@@ -190,7 +195,12 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 			strategy2.setBeforeSetValidator(validator2);
 			Binding bindValue2 = dbc.bindValue(swtObservable2, modelObservable2, strategy2, null);
 			// Add some decorations
-			ControlDecorationSupport.create(bindValue2, SWT.TOP | SWT.LEFT);
+			try {
+				MethodUtils.invokeExactMethod(Class.forName("org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport"),
+						"ignored!", new Object[]{bindValue2, SWT.TOP | SWT.LEFT});
+			} catch (Exception e) {
+				Logger.debug("error", e);
+			}
 
 			if (i == 0) sources[i].setFocus();
 
