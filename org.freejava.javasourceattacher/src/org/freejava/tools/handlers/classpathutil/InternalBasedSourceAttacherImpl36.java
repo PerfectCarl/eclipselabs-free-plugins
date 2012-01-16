@@ -1,12 +1,9 @@
 package org.freejava.tools.handlers.classpathutil;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 
-import org.apache.commons.beanutils.MethodUtils;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -16,14 +13,12 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.ui.wizards.buildpaths.BuildPathSupport;
 import org.eclipse.jdt.internal.ui.wizards.buildpaths.CPListElement;
-import org.eclipse.swt.widgets.Shell;
 
 // copied and modified from org.eclipse.jdt.internal.ui.preferences.SourceAttachmentPropertyPage
-public class InternalBasedSourceAttacherImpl implements SourceAttacher {
+public class InternalBasedSourceAttacherImpl36 implements SourceAttacher {
 
 	public boolean attachSource(IPackageFragmentRoot fRoot, String newSourcePath)
 			throws CoreException {
@@ -42,24 +37,8 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 
 			IPath containerPath= null;
 			IJavaProject jproject= fRoot.getJavaProject();
-
-			// workaround for 3.5
-			boolean ise35 = true;
-			IClasspathEntry entry0;
-			try {
-				entry0 = (IClasspathEntry) MethodUtils.invokeExactStaticMethod(JavaModelUtil.class, "getClasspathEntry", new Object[] {fRoot}, new Class[] {IPackageFragmentRoot.class});
-				ise35 = false;
-			} catch (NoSuchMethodException e) {
-				entry0 = fRoot.getRawClasspathEntry();
-			} catch (IllegalAccessException e) {
-				entry0 = fRoot.getRawClasspathEntry();
-			} catch (InvocationTargetException e) {
-				entry0 = fRoot.getRawClasspathEntry();
-			}
-
-			if (ise35 && entry0 == null) {
-				entry0= JavaCore.newLibraryEntry(fRoot.getPath(), null, null);
-			} else if (!ise35 && entry0.getEntryKind() == IClasspathEntry.CPE_CONTAINER || ise35 && entry0 != null) {
+			IClasspathEntry entry0 = JavaModelUtil.getClasspathEntry(fRoot);
+			if (entry0.getEntryKind() == IClasspathEntry.CPE_CONTAINER) {
 				containerPath= entry0.getPath();
 				ClasspathContainerInitializer initializer= JavaCore.getClasspathContainerInitializer(containerPath.segment(0));
 				IClasspathContainer container= JavaCore.getClasspathContainer(containerPath, jproject);
@@ -105,19 +84,10 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 			}
 
 			IClasspathEntry newEntry = entry;
+			boolean isReferencedEntry = fEntry.getReferencingEntry() != null;
 
 			String[] changedAttributes= { CPListElement.SOURCEATTACHMENT };
-			try {
-				boolean isReferencedEntry = (MethodUtils.invokeExactMethod(fEntry, "getReferencingEntry", null, null) != null);
-				MethodUtils.invokeExactStaticMethod(BuildPathSupport.class, "modifyClasspathEntry", new Object[] {null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor()},
-						new Class[] {Shell.class, IClasspathEntry.class, String[].class, IJavaProject.class, IPath.class, boolean.class, IProgressMonitor.class});
-			} catch (NoSuchMethodException e) {
-				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor());
-			} catch (IllegalAccessException e) {
-				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor());
-			} catch (InvocationTargetException e) {
-				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor());
-			}
+			BuildPathSupport.modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor());
 
 		} catch (CoreException e) {
 			// error
@@ -127,30 +97,4 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 
 		return true;
 	}
-
-	/**
-	 * Support older version (3.5)
-	 *
-	 * @param root
-	 * @return
-	 * @throws JavaModelException
-	 *
-	 */
-	private void modifyClasspathEntry(Object object, IClasspathEntry newEntry,
-			String[] changedAttributes, IJavaProject jproject,
-			IPath fContainerPath,
-			IProgressMonitor progressMonitor) {
-		// old 3.5
-		try {
-			MethodUtils.invokeExactStaticMethod(BuildPathSupport.class, "modifyClasspathEntry", new Object[] {null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor()},
-				new Class[] {Shell.class, IClasspathEntry.class, String[].class, IJavaProject.class, IPath.class, IProgressMonitor.class});
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException(e);
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		} catch (InvocationTargetException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 }
