@@ -105,18 +105,18 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 			}
 
 			IClasspathEntry newEntry = entry;
-			boolean isReferencedEntry = fEntry.getReferencingEntry() != null;
 
 			String[] changedAttributes= { CPListElement.SOURCEATTACHMENT };
 			try {
+				boolean isReferencedEntry = (MethodUtils.invokeExactMethod(fEntry, "getReferencingEntry", null, null) != null);
 				MethodUtils.invokeExactStaticMethod(BuildPathSupport.class, "modifyClasspathEntry", new Object[] {null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor()},
 						new Class[] {Shell.class, IClasspathEntry.class, String[].class, IJavaProject.class, IPath.class, boolean.class, IProgressMonitor.class});
 			} catch (NoSuchMethodException e) {
-				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor());
+				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor());
 			} catch (IllegalAccessException e) {
-				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor());
+				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor());
 			} catch (InvocationTargetException e) {
-				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor());
+				modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, new NullProgressMonitor());
 			}
 
 		} catch (CoreException e) {
@@ -138,7 +138,7 @@ public class InternalBasedSourceAttacherImpl implements SourceAttacher {
 	 */
 	private void modifyClasspathEntry(Object object, IClasspathEntry newEntry,
 			String[] changedAttributes, IJavaProject jproject,
-			IPath fContainerPath, boolean isReferencedEntry,
+			IPath fContainerPath,
 			IProgressMonitor progressMonitor) {
 		// old 3.5
 		try {
