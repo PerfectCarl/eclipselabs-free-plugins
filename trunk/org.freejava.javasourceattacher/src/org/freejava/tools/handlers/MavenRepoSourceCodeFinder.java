@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,9 +15,12 @@ import java.util.Set;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+
+import com.google.common.io.Files;
 
 public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -30,9 +34,7 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
 	public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
-	        FileInputStream fis = FileUtils.openInputStream(new File(binFile));
-	        String sha1 = DigestUtils.shaHex(fis);
-	        IOUtils.closeQuietly(fis);
+			String sha1 = new String(Hex.encodeHex(Files.getDigest(new File(binFile), MessageDigest.getInstance("SHA"))));
 	        gavs.addAll(findArtifactsUsingMavenCentral(sha1));
         } catch (Exception e) {
             e.printStackTrace();

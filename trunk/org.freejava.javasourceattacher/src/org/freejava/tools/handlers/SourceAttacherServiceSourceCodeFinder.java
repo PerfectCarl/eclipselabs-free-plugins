@@ -3,14 +3,18 @@ package org.freejava.tools.handlers;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.MessageDigest;
 import java.util.List;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+
+import com.google.common.io.Files;
 
 public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -35,11 +39,10 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 
         try {
 	        if (canceled) return;
-	        InputStream is = FileUtils.openInputStream(bin);
 	        InputStream is2 = null;
 	        String md5;
 	        try {
-	            md5 = DigestUtils.md5Hex(is);
+				md5 = new String(Hex.encodeHex(Files.getDigest(bin, MessageDigest.getInstance("MD5"))));
 	        	is2 = new URL(SERVICE + "/rest/libraries?md5=" + md5).openStream();
 	        	String str = IOUtils.toString(is2);
 	        	JSONArray json = JSONArray.fromObject(str);
@@ -68,7 +71,6 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 		        }
 
 	        } finally {
-	            IOUtils.closeQuietly(is);
 	        	IOUtils.closeQuietly(is2);
 	        }
 
