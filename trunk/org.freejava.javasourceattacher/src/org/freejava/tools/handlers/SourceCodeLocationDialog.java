@@ -5,10 +5,12 @@ import java.io.File;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.UrlValidator;
 import org.eclipse.core.databinding.Binding;
@@ -17,7 +19,10 @@ import org.eclipse.core.databinding.UpdateValueStrategy;
 import org.eclipse.core.databinding.observable.value.IObservableValue;
 import org.eclipse.core.databinding.validation.IValidator;
 import org.eclipse.core.databinding.validation.ValidationStatus;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jface.databinding.swt.ISWTObservableValue;
 import org.eclipse.jface.databinding.swt.SWTObservables;
 import org.eclipse.jface.dialogs.IDialogConstants;
@@ -27,6 +32,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
@@ -41,14 +47,19 @@ import org.freejava.tools.handlers.classpathutil.Logger;
 import com.google.common.io.Files;
 
 public class SourceCodeLocationDialog extends TitleAreaDialog {
-
+	private Map<String, IPackageFragmentRoot> requests;
+	private IProgressMonitor monitor;
+	
 	private Text[] binaries;
 	private Text[] sources;
 	private String[] libPaths;
 	private SourceCodeLocationDialogModel model;
 
-	public SourceCodeLocationDialog(Shell parentShell, String[] sourcePaths) {
+	public SourceCodeLocationDialog(Map<String, IPackageFragmentRoot> requests, IProgressMonitor monitor, Shell parentShell, String[] sourcePaths) {
 		super(parentShell);
+		this.requests = requests;
+		this.monitor = monitor;
+		
 		this.libPaths = sourcePaths;
 		this.model = new SourceCodeLocationDialogModel(this.libPaths);
 
@@ -222,16 +233,30 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 	@Override
 	protected void okPressed() {
 		try {
-
+			final List<IPackageFragmentRoot> nextRoots = new ArrayList<IPackageFragmentRoot>();
 			for (int i = 0; i < this.model.getBinaries().length; i++) {
 				String binPath = this.model.getBinaries()[i];
 				String srcUrl = this.model.getSources()[i];
-				SourceCheck.proposeSourceLink(binPath, srcUrl);
+				boolean success = SourceCheck.proposeSourceLink(binPath, srcUrl);
+				if (success && requests.containsKey(binPath)) {
+					nextRoots.add(requests.get(binPath));
+				}
 			}
-
 			super.okPressed();
+
+			// retry
+	        if (!nextRoots.isEmpty()) {
+		        Job job = new Job("Trying attaching source to library again (after source contribution)...") {
+		            protected IStatus run(IProgressMonitor monitor) {
+		                return JavaSourceAttacherHandler.updateSourceAttachments(nextRoots, monitor, getShell(), false);
+		            }
+		        };
+		        job.setPriority(Job.LONG);
+		        job.schedule();
+	        }
+	        
 		} catch (Exception e) {
-			//throw new ExecutionException("Cannot open search page. Error:" + e.getMessage(), e);
+			
 		}
 
 	}

@@ -101,7 +101,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         if (!selections.isEmpty()) {
 	        Job job = new Job("Attaching source to library...") {
 	            protected IStatus run(IProgressMonitor monitor) {
-	                return updateSourceAttachments(selections, monitor, shell);
+	                return updateSourceAttachments(selections, monitor, shell, true);
 	            }
 	        };
 	        job.setPriority(Job.LONG);
@@ -111,10 +111,10 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return null;
     }
 
-    private static IStatus updateSourceAttachments(List<IPackageFragmentRoot> roots, IProgressMonitor monitor, final Shell shell) {
+    public static IStatus updateSourceAttachments(List<IPackageFragmentRoot> roots, final IProgressMonitor monitor, final Shell shell, boolean firstTime) {
 
         // Process valid selections
-    	Map<String, IPackageFragmentRoot> requests = new HashMap<String, IPackageFragmentRoot>();
+    	final Map<String, IPackageFragmentRoot> requests = new HashMap<String, IPackageFragmentRoot>();
         for (IPackageFragmentRoot pkgRoot : roots) {
             File file;
             if (!pkgRoot.isExternal()) {
@@ -155,11 +155,11 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         }
 
         // Source not found
-        if (!notProcessedLibs.isEmpty()) {
+        if (!notProcessedLibs.isEmpty() && firstTime) {
         	Display.getDefault().asyncExec(new Runnable() {
     			public void run() {
     	        	SourceCodeLocationDialog dialog = new SourceCodeLocationDialog(
-    	        			shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
+    	        			requests, monitor, shell, notProcessedLibs.toArray(new String[notProcessedLibs.size()]));
     	        	dialog.open();
     			}
     		});

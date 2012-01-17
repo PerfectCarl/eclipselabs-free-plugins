@@ -9,9 +9,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -32,7 +32,8 @@ import com.google.common.io.Files;
 
 public class SourceCheck {
 
-	public static void proposeSourceLink(String path, String url) throws IOException {
+	public static boolean proposeSourceLink(String path, String url) throws IOException {
+		boolean success = false;
 		try {
 			if (StringUtils.isNotBlank(path) && StringUtils.isNotBlank(url)) {
 				path = StringUtils.trimToEmpty(path);
@@ -55,12 +56,13 @@ public class SourceCheck {
 					 String src_sha1 = new String(Hex.encodeHex(Files.getDigest(file2, MessageDigest.getInstance("SHA"))));
 					 String src_urls = url;
 				    postToServer(origin, md5, sha1, src_origin, src_md5, src_sha1, src_urls);
-
+				    success = true;
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return success;
 	}
 
 	private static void postToServer(String origin, String md5, String sha1,
@@ -78,7 +80,7 @@ public class SourceCheck {
 
 		// Send data
 		URL url2 = new URL(SourceAttacherServiceSourceCodeFinder.SERVICE + "/rest/libraries");
-		URLConnection conn = url2.openConnection();
+		HttpURLConnection conn = (HttpURLConnection) url2.openConnection();
 		conn.setDoOutput(true);
 		OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream());
 		wr.write(data);
@@ -91,6 +93,9 @@ public class SourceCheck {
 		}
 		wr.close();
 		rd.close();
+		if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+			throw new IllegalStateException("Cannot submit " + src_origin);
+		}
 	}
 
 	private static File download(String str) throws IOException {

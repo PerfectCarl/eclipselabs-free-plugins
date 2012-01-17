@@ -43,7 +43,8 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 	        String md5;
 	        try {
 				md5 = new String(Hex.encodeHex(Files.getDigest(bin, MessageDigest.getInstance("MD5"))));
-	        	is2 = new URL(SERVICE + "/rest/libraries?md5=" + md5).openStream();
+				String serviceUrl = SERVICE + "/rest/libraries?md5=" + md5; 
+	        	is2 = new URL(serviceUrl).openStream();
 	        	String str = IOUtils.toString(is2);
 	        	JSONArray json = JSONArray.fromObject(str);
 
