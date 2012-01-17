@@ -7,6 +7,7 @@ import java.net.URLEncoder;
 import java.security.MessageDigest;
 
 import org.apache.commons.beanutils.MethodUtils;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.validator.UrlValidator;
@@ -141,7 +142,7 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 				public void handleEvent(Event event) {
 					try {
 						File file = new File(fileText.getText());
-						String md5 = DigestUtils.md5Hex(Files.getDigest(file, MessageDigest.getInstance("MD5")));
+						String md5 = new String(Hex.encodeHex(Files.getDigest(file, MessageDigest.getInstance("MD5"))));
 						URL url = new URL( "http://www.google.com/search?q=" + URLEncoder.encode(md5, "UTF-8"));
 						int style = IWorkbenchBrowserSupport.AS_EXTERNAL
 								| IWorkbenchBrowserSupport.NAVIGATION_BAR;

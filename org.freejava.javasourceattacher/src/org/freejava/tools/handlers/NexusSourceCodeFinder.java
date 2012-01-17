@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.security.MessageDigest;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,12 +17,15 @@ import java.util.Set;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.sonatype.nexus.rest.model.NexusArtifact;
 import org.sonatype.nexus.rest.model.SearchNGResponse;
 import org.sonatype.nexus.rest.model.SearchResponse;
+
+import com.google.common.io.Files;
 
 public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -39,13 +43,7 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
     public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
 		try {
-			String sha1;
-	        FileInputStream fis = FileUtils.openInputStream(new File(binFile));
-	        try {
-	        	sha1 = DigestUtils.shaHex(fis);
-	        } finally {
-	        	IOUtils.closeQuietly(fis);
-	        }
+			String sha1 = new String(Hex.encodeHex(Files.getDigest(new File(binFile), MessageDigest.getInstance("SHA"))));
 	        gavs.addAll(findArtifactsUsingNexus(null, null, null, null, sha1, false));
         } catch (Exception e) {
             e.printStackTrace();

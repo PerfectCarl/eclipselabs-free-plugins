@@ -47,11 +47,12 @@ public class SourceCheck {
 				boolean isSource = isSource(javanames, classnames);
 				if (isSource) {
 					 String origin = path;
-					 String md5 = Hex.encodeHexString(Files.getDigest(file1, MessageDigest.getInstance("MD5")));
-					 String sha1 = Hex.encodeHexString(Files.getDigest(file1, MessageDigest.getInstance("SHA1")));
+					 String md5 = new String(Hex.encodeHex(Files.getDigest(file1, MessageDigest.getInstance("MD5"))));
+					 String sha1 = new String(Hex.encodeHex(Files.getDigest(file1, MessageDigest.getInstance("SHA"))));
+
 					 String src_origin = url;
-					 String src_md5 = Hex.encodeHexString(Files.getDigest(file2, MessageDigest.getInstance("MD5")));
-					 String src_sha1 = Hex.encodeHexString(Files.getDigest(file2, MessageDigest.getInstance("SHA1")));
+					 String src_md5 = new String(Hex.encodeHex(Files.getDigest(file2, MessageDigest.getInstance("MD5"))));
+					 String src_sha1 = new String(Hex.encodeHex(Files.getDigest(file2, MessageDigest.getInstance("SHA"))));
 					 String src_urls = url;
 				    postToServer(origin, md5, sha1, src_origin, src_md5, src_sha1, src_urls);
 
