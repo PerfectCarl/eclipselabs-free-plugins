@@ -32,7 +32,7 @@ public class EclipseSource {
 
 
 	public static void main(String[] args) throws Exception {
-		String scanRoot = "c:\\Downloads\\eclipse\\eclipse\\updates\\3.5";
+		String scanRoot = "c:\\Downloads\\eclipse\\eclipse\\updates";
 		String localRoot = "c:\\Downloads\\eclipse";
 		String webRoot = "http://download.eclipse.org/";
 
