@@ -130,8 +130,7 @@ public class UnhandledExceptionCheck extends Check {
 					String varIdent = identBlock.getText();
 					String simpleTypeName = typeIdent.substring(typeIdent
 							.lastIndexOf('.') + 1);
-					if (simpleTypeName.equals("Logger")
-							|| simpleTypeName.equals("Log")) {
+					if (simpleTypeName.toLowerCase().indexOf("log") != -1) {
 						result = varIdent;
 					}
 				}
