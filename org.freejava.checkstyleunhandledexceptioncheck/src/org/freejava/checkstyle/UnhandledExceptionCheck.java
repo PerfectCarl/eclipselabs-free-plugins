@@ -52,7 +52,7 @@ public class UnhandledExceptionCheck extends Check {
 		boolean result = false;
 
 		String loggerName = findLoggerName(catchAst);
-		if (loggerName == null) return false;
+
 		// Find all METHOD_CALL which has first IDENT equals to loggerName and
 		// exceptionVarName in param list
 		List<AST> asts = findAstByType(catchAst, TokenTypes.METHOD_CALL);
@@ -60,7 +60,7 @@ public class UnhandledExceptionCheck extends Check {
 			if (ast.getFirstChild().getType() == TokenTypes.DOT
 					&& ast.getFirstChild().getFirstChild().getType() == TokenTypes.IDENT) {
 				String ident = ast.getFirstChild().getFirstChild().getText();
-				if (ident.equals(loggerName)) {
+				if (ident.equals(loggerName) || (loggerName == null && ident.toLowerCase().indexOf("log") != -1)) {
 					AST elist = ast.getFirstChild().getNextSibling();
 					if (elist.getType() == TokenTypes.ELIST) {
 						List<AST> exprs = new ArrayList<AST>();
