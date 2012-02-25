@@ -116,6 +116,17 @@ public class SourceCheck {
 		return result;
 	}
 
+	public static boolean isWrongSource(File srcFile, File binFile) throws IOException {
+
+		List<String> classnames = getJavaFileNames(binFile, ".class");
+
+		List<String> javanames = getJavaFileNames(srcFile, ".java");
+
+		boolean isWrongSource = !classnames.isEmpty() && javanames.isEmpty();
+
+		return isWrongSource;
+	}
+
 	private static boolean isSource(List<String> javanames, List<String> classnames) {
 		Set<String> javanames2 = new HashSet<String>();
 		for (String javaname : javanames) {

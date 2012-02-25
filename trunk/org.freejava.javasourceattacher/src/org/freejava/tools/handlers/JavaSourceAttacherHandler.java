@@ -81,9 +81,18 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                         || pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_VARIABLE
                         || pkgRoot.getRawClasspathEntry().getEntryKind() == IClasspathEntry.CPE_CONTAINER)) {
                 	IPath source = pkgRoot.getSourceAttachmentPath();
+
                 	if (source != null && !source.isEmpty() && new File(source.toOSString()).exists()) {
-                		// Valid source found, ignore
-                		it.remove();
+                    	File binFile;
+                        if (!pkgRoot.isExternal()) {
+                        	binFile = pkgRoot.getResource().getLocation().toFile();
+                        } else {
+                        	binFile = pkgRoot.getPath().toFile();
+                        }
+                        if (!SourceCheck.isWrongSource(new File(source.toOSString()), binFile)) {
+                    		// Valid source found, ignore
+                    		it.remove();
+                        }
                 	} else {
                 		// OK, will process
                 	}
