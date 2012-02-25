@@ -31,4 +31,11 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.wst.common.project.facet.core.nature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>lib-net.sf.eclipsecs.checkstyle_5.5.0.201111092104</name>
+			<type>2</type>
+			<location>D:/programs/eclipse_mk2/eclipse/dropins/Checkstyle/plugins/net.sf.eclipsecs.checkstyle_5.5.0.201111092104</location>
+		</link>
+	</linkedResources>
 </projectDescription>
