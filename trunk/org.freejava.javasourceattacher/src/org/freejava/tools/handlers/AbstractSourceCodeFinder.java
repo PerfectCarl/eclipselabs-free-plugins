@@ -112,6 +112,8 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
         	os = FileUtils.openOutputStream(file);
             IOUtils.copy(is, os);
         } catch (Exception e) {
+            IOUtils.closeQuietly(os);
+        	file.delete();
         } finally {
             IOUtils.closeQuietly(os);
             IOUtils.closeQuietly(is);
@@ -130,8 +132,8 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
           if (c instanceof HttpURLConnection)
           {
              ((HttpURLConnection) c).setInstanceFollowRedirects(false);
+             c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7");
           }
-          c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7");
 
           // We want to open the input stream before getting headers
           // because getHeaderField() et al swallow IOExceptions.
