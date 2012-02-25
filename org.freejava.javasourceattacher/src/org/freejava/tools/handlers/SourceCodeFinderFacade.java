@@ -49,6 +49,11 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 			new NexusSourceCodeFinder("http://maven.alfresco.com/nexus/index.html"),
 			new ArtifactorySourceCodeFinder("https://repository.cloudera.com/artifactory/webapp/home.html"),
 			new NexusSourceCodeFinder("http://nexus.xwiki.org/nexus/index.html"),
+
+			new EclipsePluginSourceByUrlPatternFinder("http://www.mmnt.ru/int/get?st={0}"),
+			new EclipsePluginSourceByUrlPatternFinder("http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter"),
+			new EclipsePluginSourceByGoogleCSESourceCodeFinder(),
+
 			new SourceAttacherServiceSourceCodeFinder()//,
 			//new GoogleSourceCodeFinder()
 	};
