@@ -105,9 +105,10 @@ public class UnhandledExceptionCheck extends Check {
 	private String findLoggerName(DetailAST ast) {
 		String result = null;
 		DetailAST currentAst = ast;
-		while (result == null && currentAst != null) {
+		while (currentAst != null) {
 			if (currentAst.getType() == TokenTypes.CLASS_DEF) {
 				result = findLoggerNameInClass(currentAst);
+				if (result != null)  break;
 			}
 			currentAst = currentAst.getParent();
 		}
@@ -130,7 +131,7 @@ public class UnhandledExceptionCheck extends Check {
 					String varIdent = identBlock.getText();
 					String simpleTypeName = typeIdent.substring(typeIdent
 							.lastIndexOf('.') + 1);
-					if (simpleTypeName.toLowerCase().indexOf("log") != -1) {
+					if (simpleTypeName.indexOf("Log") != -1) {
 						result = varIdent;
 					}
 				}
