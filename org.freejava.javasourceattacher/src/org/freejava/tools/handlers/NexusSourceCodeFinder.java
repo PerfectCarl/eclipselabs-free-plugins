@@ -21,6 +21,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.freejava.tools.handlers.classpathutil.Logger;
 import org.sonatype.nexus.rest.model.NexusArtifact;
 import org.sonatype.nexus.rest.model.SearchNGResponse;
 import org.sonatype.nexus.rest.model.SearchResponse;
@@ -34,6 +35,11 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
 
 	public NexusSourceCodeFinder(String serviceUrl) {
 		this.serviceUrl = serviceUrl;
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass() + "; serviceUrl=" + serviceUrl;
 	}
 
     public void cancel() {
@@ -71,7 +77,11 @@ public class NexusSourceCodeFinder extends AbstractSourceCodeFinder implements S
         	try {
         		String result = download(entry.getValue());
 	        	if (result != null && isSourceCodeFor(result, binFile)) {
-	        		results.add(new SourceFileResult(binFile, result, name, 100));
+
+	        		SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
+	        		Logger.debug(this.toString() + " FOUND: " + object, null);
+	        		results.add(object);
+
 	        	}
         	} catch (Exception e) {
 				e.printStackTrace();

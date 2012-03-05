@@ -17,6 +17,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import org.apache.commons.io.IOUtils;
+import org.freejava.tools.handlers.classpathutil.Logger;
 
 
 public class EclipsePluginSourceByGoogleCSESourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
@@ -27,6 +28,11 @@ public class EclipsePluginSourceByGoogleCSESourceCodeFinder extends AbstractSour
 
     public EclipsePluginSourceByGoogleCSESourceCodeFinder() {
     }
+
+    @Override
+	public String toString() {
+		return this.getClass().toString();
+	}
 
 	public void cancel() {
 		this.canceled = true;
@@ -51,7 +57,11 @@ public class EclipsePluginSourceByGoogleCSESourceCodeFinder extends AbstractSour
 
         if (result != null && result[0] != null) {
         	String name = result[0].substring(result[0].lastIndexOf('/') + 1);
-    		results.add(new SourceFileResult(binFile, result[1], name, 50));
+
+    		SourceFileResult object = new SourceFileResult(binFile, result[1], name, 50);
+    		Logger.debug(this.toString() + " FOUND: " + object, null);
+    		results.add(object);
+
         }
     }
 

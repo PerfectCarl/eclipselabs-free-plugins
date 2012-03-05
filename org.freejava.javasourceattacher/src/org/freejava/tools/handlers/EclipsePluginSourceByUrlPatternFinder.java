@@ -17,6 +17,7 @@ import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLEditorKit;
 
 import org.apache.commons.io.IOUtils;
+import org.freejava.tools.handlers.classpathutil.Logger;
 
 public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -30,6 +31,11 @@ public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFin
     public EclipsePluginSourceByUrlPatternFinder(String urlPattern) {
     	this.urlPattern = urlPattern;
     }
+
+	@Override
+	public String toString() {
+		return this.getClass() + "; urlPattern=" + urlPattern;
+	}
 
 	public void cancel() {
 		this.canceled = true;
@@ -53,7 +59,11 @@ public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFin
 
         if (result != null && result[0] != null) {
         	String name = result[0].substring(result[0].lastIndexOf('/') + 1);
-    		results.add(new SourceFileResult(binFile, result[1], name, 50));
+
+    		SourceFileResult object = new SourceFileResult(binFile, result[1], name, 50);
+    		Logger.debug(this.toString() + " FOUND: " + object, null);
+    		results.add(object);
+
         }
     }
 

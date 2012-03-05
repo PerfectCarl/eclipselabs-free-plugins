@@ -23,6 +23,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.freejava.tools.handlers.classpathutil.Logger;
 
 import com.google.common.io.Files;
 
@@ -33,6 +34,11 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
 
 	public ArtifactorySourceCodeFinder(String serviceUrl) {
 		this.serviceUrl = serviceUrl;
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass() + "; serviceUrl=" + serviceUrl;
 	}
 
     public void cancel() {
@@ -70,7 +76,9 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
         	try {
         		String result = download(entry.getValue());
 	        	if (result != null && isSourceCodeFor(result, binFile)) {
-	        		results.add(new SourceFileResult(binFile, result, name, 100));
+	        		SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
+	        		Logger.debug(this.toString() + " FOUND: " + object, null);
+	        		results.add(object);
 	        	}
         	} catch (Exception e) {
 				e.printStackTrace();
