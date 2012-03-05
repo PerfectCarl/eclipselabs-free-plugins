@@ -13,6 +13,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.freejava.tools.handlers.classpathutil.Logger;
 
 import com.google.common.io.Files;
 
@@ -25,6 +26,11 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 
     public SourceAttacherServiceSourceCodeFinder() {
     }
+
+	@Override
+	public String toString() {
+		return this.getClass().toString();
+	}
 
 	public void cancel() {
 		this.canceled = true;
@@ -43,7 +49,7 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 	        String md5;
 	        try {
 				md5 = new String(Hex.encodeHex(Files.getDigest(bin, MessageDigest.getInstance("MD5"))));
-				String serviceUrl = SERVICE + "/rest/libraries?md5=" + md5; 
+				String serviceUrl = SERVICE + "/rest/libraries?md5=" + md5;
 	        	is2 = new URL(serviceUrl).openStream();
 	        	String str = IOUtils.toString(is2);
 	        	JSONArray json = JSONArray.fromObject(str);
@@ -68,7 +74,11 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
 
 		        if (url != null && fileDownloaded != null) {
 		        	String name = url.substring(url.lastIndexOf('/') + 1);
-		    		results.add(new SourceFileResult(binFile, fileDownloaded, name, 90));
+
+	        		SourceFileResult object = new SourceFileResult(binFile, fileDownloaded, name, 90);
+	        		Logger.debug(this.toString() + " FOUND: " + object, null);
+	        		results.add(object);
+
 		        }
 
 	        } finally {

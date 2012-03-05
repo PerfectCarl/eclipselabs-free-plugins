@@ -2,7 +2,7 @@
 <feature
       id="org.freejava.javasourceattacher.feature"
       label="Java Source Attacher Feature"
-      version="1.2.1.0"
+      version="1.2.2.0"
       provider-name="Thai Ha">
 
    <description url="http://svn.codespot.com/a/eclipselabs.org/free-plugins/">

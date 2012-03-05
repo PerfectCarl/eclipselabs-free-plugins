@@ -13,6 +13,12 @@ public class SourceFileResult {
 		this.accuracy = accuracy;
 	}
 
+	@Override
+	public String toString() {
+		String s =  "SourceFileResult[source = "+ source + " ; suggestedSourceFileName = " + suggestedSourceFileName + " ; accuracy = " + accuracy + " ; binFile = " + binFile + " ]";
+		return s;
+	}
+
 	public String getBinFile() {
 		return binFile;
 	}

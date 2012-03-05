@@ -1,7 +1,6 @@
 package org.freejava.tools.handlers;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
@@ -16,9 +15,8 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.freejava.tools.handlers.classpathutil.Logger;
 
 import com.google.common.io.Files;
 
@@ -29,6 +27,11 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
 	public void cancel() {
 		this.canceled = true;
 
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass().toString();
 	}
 
 	public void find(String binFile, List<SourceFileResult> results) {
@@ -62,7 +65,10 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
         	try {
         		String result = download(entry.getValue());
 	        	if (result != null && isSourceCodeFor(result, binFile)) {
-	        		results.add(new SourceFileResult(binFile, result, name, 100));
+	        		SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
+	        		Logger.debug(this.toString() + " FOUND: " + object, null);
+	        		results.add(object);
+
 	        	}
         	} catch (Exception e) {
 				e.printStackTrace();
