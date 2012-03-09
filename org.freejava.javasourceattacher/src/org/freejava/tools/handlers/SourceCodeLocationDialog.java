@@ -6,6 +6,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +22,7 @@ import org.eclipse.core.databinding.validation.IValidator;
 import org.eclipse.core.databinding.validation.ValidationStatus;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jface.databinding.swt.ISWTObservableValue;
@@ -49,7 +51,7 @@ import com.google.common.io.Files;
 public class SourceCodeLocationDialog extends TitleAreaDialog {
 	private Map<String, IPackageFragmentRoot> requests;
 	private IProgressMonitor monitor;
-	
+
 	private Text[] binaries;
 	private Text[] sources;
 	private String[] libPaths;
@@ -59,7 +61,7 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 		super(parentShell);
 		this.requests = requests;
 		this.monitor = monitor;
-		
+
 		this.libPaths = sourcePaths;
 		this.model = new SourceCodeLocationDialogModel(this.libPaths);
 
@@ -232,33 +234,43 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
 
 	@Override
 	protected void okPressed() {
-		try {
-			final List<IPackageFragmentRoot> nextRoots = new ArrayList<IPackageFragmentRoot>();
-			for (int i = 0; i < this.model.getBinaries().length; i++) {
-				String binPath = this.model.getBinaries()[i];
-				String srcUrl = this.model.getSources()[i];
-				boolean success = SourceCheck.proposeSourceLink(binPath, srcUrl);
-				if (success && requests.containsKey(binPath)) {
-					nextRoots.add(requests.get(binPath));
-				}
-			}
-			super.okPressed();
+		// close dialog
+		super.okPressed();
 
-			// retry
-	        if (!nextRoots.isEmpty()) {
-		        Job job = new Job("Trying attaching source to library again (after source contribution)...") {
-		            protected IStatus run(IProgressMonitor monitor) {
-		                return JavaSourceAttacherHandler.updateSourceAttachments(nextRoots, monitor, getShell(), false);
-		            }
-		        };
-		        job.setPriority(Job.LONG);
-		        job.schedule();
-	        }
-	        
-		} catch (Exception e) {
-			
+		// prepare data for Job
+		final Map<String, String> bin2srcMap = new HashMap<String, String>();
+		for (int i = 0; i < this.model.getBinaries().length; i++) {
+			String binPath = this.model.getBinaries()[i];
+			String srcUrl = this.model.getSources()[i];
+			if (StringUtils.isNotBlank(binPath) && StringUtils.isNotBlank(srcUrl)) {
+				bin2srcMap.put(binPath, srcUrl);
+			}
 		}
 
+        Job job = new Job("Trying to attach source to library again (after source contribution)...") {
+            protected IStatus run(IProgressMonitor monitor) {
+    			List<IPackageFragmentRoot> nextRoots = new ArrayList<IPackageFragmentRoot>();
+    			for (Map.Entry<String, String> entry : bin2srcMap.entrySet()) {
+    				String binPath = entry.getKey();
+    				String srcUrl = entry.getValue();
+    				try {
+	    				boolean success = SourceCheck.proposeSourceLink(binPath, srcUrl);
+	    				if (success && requests.containsKey(binPath)) {
+	    					nextRoots.add(requests.get(binPath));
+	    				}
+    				} catch (Exception e) {
+					}
+    			}
+
+    			// retry
+    	        if (!nextRoots.isEmpty()) {
+    	        	return JavaSourceAttacherHandler.updateSourceAttachments(nextRoots, monitor, getShell(), false);
+    	        }
+    	        return Status.OK_STATUS;
+            }
+        };
+        job.setPriority(Job.LONG);
+        job.schedule();
 	}
 
 }
