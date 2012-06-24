@@ -105,7 +105,7 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
         return results;
 	}
 
-	private Set<GAV> findArtifactsUsingArtifactory(String g, String a, String v, String c, String sha1, boolean getLink) throws Exception {
+	protected Set<GAV> findArtifactsUsingArtifactory(String g, String a, String v, String c, String sha1, boolean getLink) throws Exception {
 		//https://repository.cloudera.com/artifactory/api/search/checksum?sha1=2bf96b7aa8b611c177d329452af1dc933e14501c
 
 		//{"results":[{"uri":"http://repository.cloudera.com/artifactory/api/storage/repo1-cache/commons-cli/commons-cli/1.2/commons-cli-1.2.jar"}]}

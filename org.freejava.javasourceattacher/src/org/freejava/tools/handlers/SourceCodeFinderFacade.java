@@ -41,6 +41,7 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 			new NexusSourceCodeFinder("https://repository.apache.org/index.html"),
 			new NexusSourceCodeFinder("https://repository.jboss.org/nexus/index.html"),
 			new NexusSourceCodeFinder("http://oss.sonatype.org/index.html"),
+			new WebBasedArtifactorySourceCodeFinder("http://repo.springsource.org/webapp/home.html"),
 			new NexusSourceCodeFinder("http://repository.ow2.org/nexus/index.html"),
 			new NexusSourceCodeFinder("https://nexus.codehaus.org/index.html"),
 			new NexusSourceCodeFinder("https://maven.java.net/index.html"),
