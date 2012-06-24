@@ -208,23 +208,44 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
 	}
 	private static void attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
 		SourceAttacher attacher;
+
+		boolean attached = false;
+
 		try {
 			attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl36").newInstance();
-			attacher.attachSource(root, sourcePath);
-			Logger.debug("Attached (type 1) " + sourcePath, null);
+			Logger.debug("Trying (using InternalBasedSourceAttacherImpl36):  " + sourcePath, null);
+			attached = attacher.attachSource(root, sourcePath);
 		} catch (Throwable e) {
-			Logger.debug("Cannot attach to " + sourcePath, e);
+			Logger.debug("Exception when trying InternalBasedSourceAttacherImpl36 to attach to " + sourcePath, e);
+		}
+
+		if (!attached) {
+			Logger.debug("Previous attempt failed:  " + sourcePath, null);
 			try {
 				attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl35").newInstance();
-				attacher.attachSource(root, sourcePath);
-				Logger.debug("Attached (type 2) " + sourcePath, null);
-			} catch (Throwable e2) {
-				Logger.debug("Cannot attach to " + sourcePath, e2);
-				attacher = new MySourceAttacher();
-				attacher.attachSource(root, sourcePath);
-				Logger.debug("Attached (type 3) " + sourcePath, null);
+				Logger.debug("Trying (using InternalBasedSourceAttacherImpl35):  " + sourcePath, null);
+				attached = attacher.attachSource(root, sourcePath);
+			} catch (Throwable e) {
+				Logger.debug("Exception when trying InternalBasedSourceAttacherImpl35 to attach to " + sourcePath, e);
 			}
+		}
 
+		if (!attached) {
+			// For android projects or projects has readonly source for classpath entry, we must for to use source path anyway using our custom attacher class
+			Logger.debug("Previous attempt failed:  " + sourcePath, null);
+			try {
+				attacher = new MySourceAttacher();
+				Logger.debug("Trying (using MySourceAttacher):  " + sourcePath, null);
+				attached = attacher.attachSource(root, sourcePath);
+			} catch (Throwable e) {
+				Logger.debug("Exception when trying MySourceAttacher to attach to " + sourcePath, e);
+			}
+		}
+
+		if (attached) {
+			Logger.debug("Attached " + sourcePath, null);
+		} else {
+			Logger.debug("Failed to attach " + sourcePath, null);
 		}
 	}
 }
