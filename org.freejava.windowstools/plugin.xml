@@ -9,6 +9,11 @@
       </category>
       <command
             categoryId="org.freejava.windowstools.category"
+            id="org.freejava.windowstools.startCmdHandlerCommand"
+            name="Start CMD">
+      </command>
+      <command
+            categoryId="org.freejava.windowstools.category"
             id="org.freejava.windowstools.startCygwinMinttyHandlerCommand"
             name="Start Cygwin Mintty">
       </command>
@@ -35,6 +40,9 @@
 
    </extension>
    <extension point="org.eclipse.ui.handlers">
+      <handler class="org.freejava.windowstools.StartCmdHandler"
+            commandId="org.freejava.windowstools.startCmdHandlerCommand">
+      </handler>
       <handler class="org.freejava.windowstools.StartCygwinMinttyHandler"
             commandId="org.freejava.windowstools.startCygwinMinttyHandlerCommand">
       </handler>
@@ -61,6 +69,7 @@
 	            </iterate>
 	          </with>
 	        </visibleWhen>
+            <command commandId="org.freejava.windowstools.startCmdHandlerCommand"/>
 	        <command commandId="org.freejava.windowstools.startCygwinMinttyHandlerCommand" icon="icons/cygwin0.ico"/>
 	        <command commandId="org.freejava.windowstools.startCygwinBashHandlerCommand" icon="icons/cygwin0.ico"/>
 	        <command commandId="org.freejava.windowstools.startMSYSConsoleHandlerCommand"/>
