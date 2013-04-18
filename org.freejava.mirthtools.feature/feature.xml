@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="org.freejava.windowstools.feature"
+      id="org.freejava.mirthtools.feature"
       label="Mirth Tools Feature"
       version="1.0.0.0"
       provider-name="org.freejava">
