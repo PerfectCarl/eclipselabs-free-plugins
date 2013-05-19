@@ -2,7 +2,7 @@
 <feature
       id="org.freejava.javaexamplessearch.feature"
       label="Java Examples Search Feature"
-      version="1.0.0.0"
+      version="1.0.0.1"
       provider-name="Thai Ha">
 
    <description url="http://svn.codespot.com/a/eclipselabs.org/free-plugins/">
