@@ -31,10 +31,17 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.freejava.tools.Activator;
 import org.freejava.tools.handlers.dependency.DependencyView;
 
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Splitter;
 import com.jeantessier.classreader.AggregatingClassfileLoader;
+import com.jeantessier.classreader.ClassNameHelper;
 import com.jeantessier.classreader.ClassfileLoader;
+import com.jeantessier.classreader.Field_info;
 import com.jeantessier.classreader.LoadListenerVisitorAdapter;
+import com.jeantessier.classreader.Method_info;
+import com.jeantessier.classreader.Signature_attribute;
 import com.jeantessier.classreader.TransientClassfileLoader;
+import com.jeantessier.classreader.Visitable;
 import com.jeantessier.classreader.Visitor;
 import com.jeantessier.dependency.CodeDependencyCollector;
 import com.jeantessier.dependency.CollectionSelectionCriteria;
@@ -353,14 +360,37 @@ public class ViewDependencyHandler extends AbstractHandler {
         return nodes;
     }
 
-    private Collection<Node> getClassDependency(Collection<File> files, Collection<String> names) {
+    public Collection<Node> getClassDependency(Collection<File> files, Collection<String> names) {
         Collection<String> sources = new HashSet<String>();
         for (File file : files) {
             sources.add(file.getAbsolutePath());
         }
 
         NodeFactory factory = new NodeFactory();
-        Visitor visitor = new CodeDependencyCollector(factory);
+        Visitor visitor = new CodeDependencyCollector(factory) {
+        	@Override
+        	public void visitSignature_attribute(Signature_attribute attribute) {
+        		super.visitSignature_attribute(attribute);
+        		Visitable owner = attribute.getOwner();
+        		String ownerFullSignature = null;
+        		if (owner instanceof Field_info) {
+        			ownerFullSignature = ((Field_info) owner).getFullSignature();
+        		} else if (owner instanceof Method_info) {
+        			ownerFullSignature = ((Method_info) owner).getFullSignature();
+        		}
+        		if (ownerFullSignature != null) {
+	        		String sig = attribute.getSignature();
+	        		for (String id : Splitter.on(CharMatcher.anyOf("<>;")).omitEmptyStrings().split(sig)) {
+	                	if (id.startsWith("L")) {
+	                		String className = id.substring(1);
+	                		className = ClassNameHelper.path2ClassName(className);
+	                		Node node = getFactory().createFeature(ownerFullSignature, true);
+	                		node.addDependency(getFactory().createClass(className));
+	                	}
+	        		}
+        		}
+        	}
+        };
         ClassfileLoader loader = new AggregatingClassfileLoader();
         loader.addLoadListener(new LoadListenerVisitorAdapter(visitor));
         loader.load(sources);
