@@ -2,7 +2,6 @@
 <site>
    <feature url="features/org.freejava.windowstools.feature_1.0.0.0.jar" id="org.freejava.windowstools.feature" version="1.0.0.0" os="win32"/>
    <feature url="features/org.freejava.javasourceattacher.feature_1.2.3.0.jar" id="org.freejava.javasourceattacher.feature" version="1.2.3.0"/>
-   <feature url="features/org.freejava.mirthtools.feature_1.0.0.0.jar" id="org.freejava.mirthtools.feature" version="1.0.0.0"/>
    <feature url="features/org.freejava.javaexamplessearch.feature_1.0.0.1.jar" id="org.freejava.javaexamplessearch.feature" version="1.0.0.1"/>
    <feature url="features/org.freejava.dependencyviewer.feature_1.0.0.2.jar" id="org.freejava.dependencyviewer.feature" version="1.0.0.2"/>
 </site>
