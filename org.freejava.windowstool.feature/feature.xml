@@ -2,7 +2,7 @@
 <feature
       id="org.freejava.windowstools.feature"
       label="Windows Tools Feature"
-      version="1.0.0.1"
+      version="1.0.0.2"
       provider-name="Thai Ha"
       os="win32">
 
