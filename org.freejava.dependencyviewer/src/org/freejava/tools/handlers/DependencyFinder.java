@@ -4,14 +4,21 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.jeantessier.classreader.AggregatingClassfileLoader;
 import com.jeantessier.classreader.ClassNameHelper;
+import com.jeantessier.classreader.Class_info;
+import com.jeantessier.classreader.Classfile;
 import com.jeantessier.classreader.ClassfileLoader;
 import com.jeantessier.classreader.Field_info;
 import com.jeantessier.classreader.LoadListenerVisitorAdapter;
+import com.jeantessier.classreader.LocalVariable;
+import com.jeantessier.classreader.LocalVariableTable_attribute;
+import com.jeantessier.classreader.LocalVariableType;
+import com.jeantessier.classreader.LocalVariableTypeTable_attribute;
 import com.jeantessier.classreader.Method_info;
 import com.jeantessier.classreader.Signature_attribute;
 import com.jeantessier.classreader.TransientClassfileLoader;
@@ -76,6 +83,8 @@ public class DependencyFinder {
         		} else if (owner instanceof Method_info) {
         			ownerFullSignature = ((Method_info) owner).getFullSignature();
         		}
+        		System.out.println("BEGIN ownerFullSignature:" + ownerFullSignature);
+
         		if (ownerFullSignature != null) {
 	        		String sig = attribute.getSignature();
 	        		for (String id : Splitter.on(CharMatcher.anyOf("<>;")).omitEmptyStrings().split(sig)) {
@@ -87,6 +96,14 @@ public class DependencyFinder {
 	                	}
 	        		}
         		}
+        	}
+
+        	@Override
+        	public void visitLocalVariable(LocalVariable helper) {
+        		super.visitLocalVariable(helper);
+        		// helper.getDescriptor() = Lorg/freejava/tools/handlers/testresources/Product;
+        		System.out.println("visitLocalVariable " + helper);
+        		//System.out.println("getCurrentNode() " + getCurrentNode());
         	}
         };
         ClassfileLoader loader = new AggregatingClassfileLoader();
@@ -111,4 +128,21 @@ public class DependencyFinder {
         nodes.addAll(dependenciesQuery.getScopeFactory().getClasses().values());
         return nodes;
     }
+
+
+	public List<Object[]> getDependencyEdges(Collection<Node> input) {
+		List<Object[]> arrows = new ArrayList<Object[]>();
+        for (Node pkg : input) {
+            for (Node node : pkg.getOutboundDependencies()) {
+                if (node instanceof Node) {
+                    Object[] arrow = new Object[2];
+                    arrow[0] = pkg;
+                    arrow[1] = node;
+                    arrows.add(arrow);
+                }
+            }
+        }
+		return arrows;
+	}
+
 }

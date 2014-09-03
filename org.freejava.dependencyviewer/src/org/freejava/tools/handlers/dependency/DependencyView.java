@@ -21,6 +21,7 @@ import org.eclipse.zest.core.widgets.ZestStyles;
 import org.eclipse.zest.layouts.LayoutStyles;
 import org.eclipse.zest.layouts.algorithms.SpringLayoutAlgorithm;
 import org.freejava.tools.Activator;
+import org.freejava.tools.handlers.DependencyFinder;
 
 import com.jeantessier.dependency.ClassNode;
 import com.jeantessier.dependency.Node;
@@ -52,17 +53,7 @@ public class DependencyView extends ViewPart {
         }
 
         private Object[] getDependencyArrows(Collection<Node> input) {
-            List<Object[]> arrows = new ArrayList<Object[]>();
-            for (Node pkg : input) {
-                for (Node node : pkg.getOutboundDependencies()) {
-                    if (node instanceof Node) {
-                        Object[] arrow = new Object[2];
-                        arrow[0] = pkg;
-                        arrow[1] = node;
-                        arrows.add(arrow);
-                    }
-                }
-            }
+            List<Object[]> arrows = new DependencyFinder().getDependencyEdges(input);
             return arrows.toArray();
         }
 
