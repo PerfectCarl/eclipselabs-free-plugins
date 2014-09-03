@@ -13,6 +13,7 @@ import com.jeantessier.classreader.ClassNameHelper;
 import com.jeantessier.classreader.Class_info;
 import com.jeantessier.classreader.Classfile;
 import com.jeantessier.classreader.ClassfileLoader;
+import com.jeantessier.classreader.DescriptorHelper;
 import com.jeantessier.classreader.Field_info;
 import com.jeantessier.classreader.LoadListenerVisitorAdapter;
 import com.jeantessier.classreader.LocalVariable;
@@ -74,6 +75,11 @@ public class DependencyFinder {
         NodeFactory factory = new NodeFactory();
         Visitor visitor = new CodeDependencyCollector(factory) {
             @Override
+            public void visitClassfile(Classfile classfile) {
+                System.out.println("Classfile:" + classfile);
+                super.visitClassfile(classfile);
+            }
+            @Override
             public void visitSignature_attribute(Signature_attribute attribute) {
                 super.visitSignature_attribute(attribute);
                 Visitable owner = attribute.getOwner();
@@ -102,7 +108,7 @@ public class DependencyFinder {
             public void visitLocalVariable(LocalVariable helper) {
                 super.visitLocalVariable(helper);
                 // helper.getDescriptor() = Lorg/freejava/tools/handlers/testresources/Product;
-                System.out.println("visitLocalVariable " + helper);
+                System.out.println("visitLocalVariable " + DescriptorHelper.getType(helper.getDescriptor()));
                 //System.out.println("getCurrentNode() " + getCurrentNode());
             }
         };
