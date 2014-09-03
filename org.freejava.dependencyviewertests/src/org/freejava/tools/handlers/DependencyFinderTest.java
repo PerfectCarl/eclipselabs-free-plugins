@@ -15,319 +15,319 @@ import com.jeantessier.dependency.Node;
 public class DependencyFinderTest {
 
 
-	@Test
-	public void testGetClassDependencyWithMember() {
+    @Test
+    public void testGetClassDependencyWithMember() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartHasProductMember.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartHasProductMember.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartHasProductMember"
-		});
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartHasProductMember"
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartHasProductMember", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartHasProductMember", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithMembers() {
+    @Test
+    public void testGetClassDependencyWithMembers() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartHasProductsMember.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartHasProductsMember.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartHasProductsMember"
-		});
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartHasProductsMember"
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartHasProductsMember", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartHasProductsMember", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithParam() {
+    @Test
+    public void testGetClassDependencyWithParam() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductParam.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductParam.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductParam"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductParam"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductParam", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductParam", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithParams() {
+    @Test
+    public void testGetClassDependencyWithParams() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsParam.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsParam.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductsParam"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductsParam"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsParam", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsParam", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithLocalVar() {
+    @Test
+    public void testGetClassDependencyWithLocalVar() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductLocalVar.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductLocalVar.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductLocalVar"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductLocalVar"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductLocalVar", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductLocalVar", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
-	@Test
-	public void testGetClassDependencyWithLocalVars() {
+    }
+    @Test
+    public void testGetClassDependencyWithLocalVars() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsLocalVar.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsLocalVar.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductsLocalVar"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductsLocalVar"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsLocalVar", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsLocalVar", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithStaticBlockVar() {
+    @Test
+    public void testGetClassDependencyWithStaticBlockVar() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductStaticBlockVar.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductStaticBlockVar.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductStaticBlockVar"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductStaticBlockVar"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductStaticBlockVar", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductStaticBlockVar", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
-	@Test
-	public void testGetClassDependencyWithStaticBlockVars() {
+    }
+    @Test
+    public void testGetClassDependencyWithStaticBlockVars() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsStaticBlockVar.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsStaticBlockVar.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductsStaticBlockVar"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductsStaticBlockVar"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsStaticBlockVar", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsStaticBlockVar", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithInstanceBlockVar() {
+    @Test
+    public void testGetClassDependencyWithInstanceBlockVar() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductInstanceBlockVar.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductInstanceBlockVar.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductInstanceBlockVar"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductInstanceBlockVar"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductInstanceBlockVar", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductInstanceBlockVar", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 
-	@Test
-	public void testGetClassDependencyWithInstanceBlockVars() {
+    @Test
+    public void testGetClassDependencyWithInstanceBlockVars() {
 
-		DependencyFinder finder = new DependencyFinder();
+        DependencyFinder finder = new DependencyFinder();
 
-		Collection<File> files = Arrays.asList(new File[] {
-				new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
-				new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsInstanceBlockVar.class")
-		});
+        Collection<File> files = Arrays.asList(new File[] {
+                new File("./bin/org/freejava/tools/handlers/testresources/Product.class"),
+                new File("./bin/org/freejava/tools/handlers/testresources/CartUseProductsInstanceBlockVar.class")
+        });
 
-		Collection<String> names = Arrays.asList(new String[] {
-			"org.freejava.tools.handlers.testresources.Product",
-			"org.freejava.tools.handlers.testresources.CartUseProductsInstanceBlockVar"
+        Collection<String> names = Arrays.asList(new String[] {
+            "org.freejava.tools.handlers.testresources.Product",
+            "org.freejava.tools.handlers.testresources.CartUseProductsInstanceBlockVar"
 
-		});
+        });
 
-		Collection<Node> nodes = finder.getClassDependency(files, names);
+        Collection<Node> nodes = finder.getClassDependency(files, names);
 
-		List<Object[]> edges = finder.getDependencyEdges(nodes);
+        List<Object[]> edges = finder.getDependencyEdges(nodes);
 
-		assertEquals(1, edges.size());
+        assertEquals(1, edges.size());
 
-		Object[] edge = edges.get(0);
+        Object[] edge = edges.get(0);
 
-		Node from = (Node) edge[0];
-		Node to = (Node) edge[1];
+        Node from = (Node) edge[0];
+        Node to = (Node) edge[1];
 
-		assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsInstanceBlockVar", from.getName());
-		assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.CartUseProductsInstanceBlockVar", from.getName());
+        assertEquals("org.freejava.tools.handlers.testresources.Product", to.getName());
 
-	}
+    }
 }
