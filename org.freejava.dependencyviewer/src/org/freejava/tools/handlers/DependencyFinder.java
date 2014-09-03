@@ -73,38 +73,38 @@ public class DependencyFinder {
 
         NodeFactory factory = new NodeFactory();
         Visitor visitor = new CodeDependencyCollector(factory) {
-        	@Override
-        	public void visitSignature_attribute(Signature_attribute attribute) {
-        		super.visitSignature_attribute(attribute);
-        		Visitable owner = attribute.getOwner();
-        		String ownerFullSignature = null;
-        		if (owner instanceof Field_info) {
-        			ownerFullSignature = ((Field_info) owner).getFullSignature();
-        		} else if (owner instanceof Method_info) {
-        			ownerFullSignature = ((Method_info) owner).getFullSignature();
-        		}
-        		System.out.println("BEGIN ownerFullSignature:" + ownerFullSignature);
+            @Override
+            public void visitSignature_attribute(Signature_attribute attribute) {
+                super.visitSignature_attribute(attribute);
+                Visitable owner = attribute.getOwner();
+                String ownerFullSignature = null;
+                if (owner instanceof Field_info) {
+                    ownerFullSignature = ((Field_info) owner).getFullSignature();
+                } else if (owner instanceof Method_info) {
+                    ownerFullSignature = ((Method_info) owner).getFullSignature();
+                }
+                System.out.println("BEGIN ownerFullSignature:" + ownerFullSignature);
 
-        		if (ownerFullSignature != null) {
-	        		String sig = attribute.getSignature();
-	        		for (String id : Splitter.on(CharMatcher.anyOf("<>;")).omitEmptyStrings().split(sig)) {
-	                	if (id.startsWith("L")) {
-	                		String className = id.substring(1);
-	                		className = ClassNameHelper.path2ClassName(className);
-	                		Node node = getFactory().createFeature(ownerFullSignature, true);
-	                		node.addDependency(getFactory().createClass(className));
-	                	}
-	        		}
-        		}
-        	}
+                if (ownerFullSignature != null) {
+                    String sig = attribute.getSignature();
+                    for (String id : Splitter.on(CharMatcher.anyOf("<>;")).omitEmptyStrings().split(sig)) {
+                        if (id.startsWith("L")) {
+                            String className = id.substring(1);
+                            className = ClassNameHelper.path2ClassName(className);
+                            Node node = getFactory().createFeature(ownerFullSignature, true);
+                            node.addDependency(getFactory().createClass(className));
+                        }
+                    }
+                }
+            }
 
-        	@Override
-        	public void visitLocalVariable(LocalVariable helper) {
-        		super.visitLocalVariable(helper);
-        		// helper.getDescriptor() = Lorg/freejava/tools/handlers/testresources/Product;
-        		System.out.println("visitLocalVariable " + helper);
-        		//System.out.println("getCurrentNode() " + getCurrentNode());
-        	}
+            @Override
+            public void visitLocalVariable(LocalVariable helper) {
+                super.visitLocalVariable(helper);
+                // helper.getDescriptor() = Lorg/freejava/tools/handlers/testresources/Product;
+                System.out.println("visitLocalVariable " + helper);
+                //System.out.println("getCurrentNode() " + getCurrentNode());
+            }
         };
         ClassfileLoader loader = new AggregatingClassfileLoader();
         loader.addLoadListener(new LoadListenerVisitorAdapter(visitor));
@@ -130,8 +130,8 @@ public class DependencyFinder {
     }
 
 
-	public List<Object[]> getDependencyEdges(Collection<Node> input) {
-		List<Object[]> arrows = new ArrayList<Object[]>();
+    public List<Object[]> getDependencyEdges(Collection<Node> input) {
+        List<Object[]> arrows = new ArrayList<Object[]>();
         for (Node pkg : input) {
             for (Node node : pkg.getOutboundDependencies()) {
                 if (node instanceof Node) {
@@ -142,7 +142,7 @@ public class DependencyFinder {
                 }
             }
         }
-		return arrows;
-	}
+        return arrows;
+    }
 
 }
