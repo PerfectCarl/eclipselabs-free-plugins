@@ -9,6 +9,7 @@ import java.util.List;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.jeantessier.classreader.AggregatingClassfileLoader;
+import com.jeantessier.classreader.Attribute_info;
 import com.jeantessier.classreader.ClassNameHelper;
 import com.jeantessier.classreader.Class_info;
 import com.jeantessier.classreader.Classfile;
@@ -23,7 +24,6 @@ import com.jeantessier.classreader.LocalVariableTypeTable_attribute;
 import com.jeantessier.classreader.Method_info;
 import com.jeantessier.classreader.Signature_attribute;
 import com.jeantessier.classreader.TransientClassfileLoader;
-import com.jeantessier.classreader.Visitable;
 import com.jeantessier.classreader.Visitor;
 import com.jeantessier.dependency.CodeDependencyCollector;
 import com.jeantessier.dependency.CollectionSelectionCriteria;
@@ -75,21 +75,10 @@ public class DependencyFinder {
         NodeFactory factory = new NodeFactory();
         Visitor visitor = new CodeDependencyCollector(factory) {
             @Override
-            public void visitClassfile(Classfile classfile) {
-                System.out.println("Classfile:" + classfile);
-                super.visitClassfile(classfile);
-            }
-            @Override
             public void visitSignature_attribute(Signature_attribute attribute) {
                 super.visitSignature_attribute(attribute);
-                Visitable owner = attribute.getOwner();
-                String ownerFullSignature = null;
-                if (owner instanceof Field_info) {
-                    ownerFullSignature = ((Field_info) owner).getFullSignature();
-                } else if (owner instanceof Method_info) {
-                    ownerFullSignature = ((Method_info) owner).getFullSignature();
-                }
-                System.out.println("BEGIN ownerFullSignature:" + ownerFullSignature);
+
+                String ownerFullSignature = findOwnerFullSignature(attribute);
 
                 if (ownerFullSignature != null) {
                     String sig = attribute.getSignature();
@@ -103,13 +92,52 @@ public class DependencyFinder {
                     }
                 }
             }
+			private String findOwnerFullSignature(Attribute_info owner) {
+				String ownerFullSignature = null;
+				Object currentObject = owner;
+                while (true) {
+					if (currentObject instanceof Field_info) {
+	                    ownerFullSignature = ((Field_info) currentObject).getFullSignature();
+	                } else if (currentObject instanceof Method_info) {
+	                    ownerFullSignature = ((Method_info) currentObject).getFullSignature();
+	                } else if (currentObject instanceof Attribute_info) {
+	                	currentObject = ((Attribute_info)currentObject).getOwner();
+	                	continue;
+	                }
+					break;
+                }
 
+				return ownerFullSignature;
+			}
             @Override
             public void visitLocalVariable(LocalVariable helper) {
                 super.visitLocalVariable(helper);
-                // helper.getDescriptor() = Lorg/freejava/tools/handlers/testresources/Product;
-                System.out.println("visitLocalVariable " + DescriptorHelper.getType(helper.getDescriptor()));
-                //System.out.println("getCurrentNode() " + getCurrentNode());
+
+                LocalVariableTable_attribute attribute = helper.getLocalVariableTable();
+                String ownerFullSignature = findOwnerFullSignature(attribute);
+
+                for (String className : Splitter.on(CharMatcher.anyOf("<>;")).omitEmptyStrings().split(DescriptorHelper.getType(helper.getDescriptor()))) {
+                    Node node = getFactory().createFeature(ownerFullSignature, true);
+                    node.addDependency(getFactory().createClass(className));
+                }
+
+
+            }
+            @Override
+            public void visitLocalVariableTypeTable_attribute(LocalVariableTypeTable_attribute attribute) {
+            	super.visitLocalVariableTypeTable_attribute(attribute);
+
+                String ownerFullSignature = findOwnerFullSignature(attribute);
+            	for (LocalVariableType type : attribute.getLocalVariableTypes()) {
+                    for (String id : Splitter.on(CharMatcher.anyOf("<>;")).omitEmptyStrings().split(type.getSignature())) {
+                        if (id.startsWith("L")) {
+                            String className = id.substring(1);
+                            className = ClassNameHelper.path2ClassName(className);
+                            Node node = getFactory().createFeature(ownerFullSignature, true);
+                            node.addDependency(getFactory().createClass(className));
+                        }
+                    }
+            	}
             }
         };
         ClassfileLoader loader = new AggregatingClassfileLoader();
