@@ -22,69 +22,69 @@ import com.google.common.io.Files;
 
 public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
-	private boolean canceled = false;
+    private boolean canceled = false;
 
-	public void cancel() {
-		this.canceled = true;
+    public void cancel() {
+        this.canceled = true;
 
-	}
+    }
 
-	@Override
-	public String toString() {
-		return this.getClass().toString();
-	}
+    @Override
+    public String toString() {
+        return this.getClass().toString();
+    }
 
-	public void find(String binFile, List<SourceFileResult> results) {
+    public void find(String binFile, List<SourceFileResult> results) {
         Collection<GAV> gavs = new HashSet<GAV>();
-		try {
-			String sha1 = new String(Hex.encodeHex(Files.getDigest(new File(binFile), MessageDigest.getInstance("SHA"))));
-	        gavs.addAll(findArtifactsUsingMavenCentral(sha1));
+        try {
+            String sha1 = new String(Hex.encodeHex(Files.getDigest(new File(binFile), MessageDigest.getInstance("SHA"))));
+            gavs.addAll(findArtifactsUsingMavenCentral(sha1));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-		if (canceled) return;
+        if (canceled) return;
 
-		try {
-			gavs.addAll(findGAVFromFile(binFile));
+        try {
+            gavs.addAll(findGAVFromFile(binFile));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-		if (canceled) return;
+        if (canceled) return;
 
-		Map<GAV, String> sourcesUrls = new HashMap<GAV, String>();
-		try {
-			sourcesUrls.putAll(findSourcesUsingMavenCentral(gavs));
+        Map<GAV, String> sourcesUrls = new HashMap<GAV, String>();
+        try {
+            sourcesUrls.putAll(findSourcesUsingMavenCentral(gavs));
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-		for (Map.Entry<GAV, String> entry : sourcesUrls.entrySet()) {
-			String name = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
-        	try {
-        		String result = download(entry.getValue());
-	        	if (result != null && isSourceCodeFor(result, binFile)) {
-	        		SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
-	        		Logger.debug(this.toString() + " FOUND: " + object, null);
-	        		results.add(object);
+        for (Map.Entry<GAV, String> entry : sourcesUrls.entrySet()) {
+            String name = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
+            try {
+                String result = download(entry.getValue());
+                if (result != null && isSourceCodeFor(result, binFile)) {
+                    SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
+                    Logger.debug(this.toString() + " FOUND: " + object, null);
+                    results.add(object);
 
-	        	}
-        	} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private Map<GAV, String> findSourcesUsingMavenCentral(Collection<GAV> gavs) throws Exception {
-		Map<GAV, String> results = new HashMap<GAV, String>();
+        Map<GAV, String> results = new HashMap<GAV, String>();
         for (GAV gav : gavs) {
-        	if (canceled) return results;
+            if (canceled) return results;
 
-        	//g:"ggg" AND a:"aaa" AND v:"vvv" AND l:"sources"
-        	String qVal = "g:\"" + gav.getG() + "\" AND a:\"" + gav.getA()
-        			+ "\" AND v:\"" + gav.getV() + "\" AND l:\"sources\"";
-        	String url = "http://search.maven.org/solrsearch/select?q=" + URLEncoder.encode(qVal, "UTF-8") + "&rows=20&wt=json";
+            //g:"ggg" AND a:"aaa" AND v:"vvv" AND l:"sources"
+            String qVal = "g:\"" + gav.getG() + "\" AND a:\"" + gav.getA()
+                    + "\" AND v:\"" + gav.getV() + "\" AND l:\"sources\"";
+            String url = "http://search.maven.org/solrsearch/select?q=" + URLEncoder.encode(qVal, "UTF-8") + "&rows=20&wt=json";
             String json = IOUtils.toString(new URL(url).openStream());
             JSONObject jsonObject = JSONObject.fromObject(json);
             JSONObject response = jsonObject.getJSONObject("response");
@@ -97,17 +97,17 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
                 String v = doci.getString("v");
                 JSONArray array = doci.getJSONArray("ec");
                 if (array.contains("-sources.jar")) {
-	                String path = g.replace('.', '/') + '/' + a + '/' + v + '/' + a + '-' + v + "-sources.jar";
-	                path = "http://search.maven.org/remotecontent?filepath=" + path;
-	                results.put(gav, path);
+                    String path = g.replace('.', '/') + '/' + a + '/' + v + '/' + a + '-' + v + "-sources.jar";
+                    path = "http://search.maven.org/remotecontent?filepath=" + path;
+                    results.put(gav, path);
                 }
             }
         }
 
         return results;
-	}
+    }
 
-	private Collection<GAV> findArtifactsUsingMavenCentral(String sha1) throws Exception {
+    private Collection<GAV> findArtifactsUsingMavenCentral(String sha1) throws Exception {
         Set<GAV> results = new HashSet<GAV>();
         String json = IOUtils.toString(new URL("http://search.maven.org/solrsearch/select?q=" + URLEncoder.encode("1:\"" + sha1 + "\"", "UTF-8") + "&rows=20&wt=json").openStream());
         JSONObject jsonObject = JSONObject.fromObject(json);
@@ -122,10 +122,10 @@ public class MavenRepoSourceCodeFinder extends AbstractSourceCodeFinder implemen
             gav.setV(doci.getString("v"));
             results.add(gav);
         }
-		return results;
-	}
+        return results;
+    }
 /*
-	private static File download(GAV srcinfo) throws Exception {
+    private static File download(GAV srcinfo) throws Exception {
         File result = null;
         String groupId = srcinfo.getG();
         String artifactId = srcinfo.getA();

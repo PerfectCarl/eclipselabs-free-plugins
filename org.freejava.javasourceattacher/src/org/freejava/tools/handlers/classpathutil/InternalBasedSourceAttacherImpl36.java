@@ -20,81 +20,81 @@ import org.eclipse.jdt.internal.ui.wizards.buildpaths.CPListElement;
 // copied and modified from org.eclipse.jdt.internal.ui.preferences.SourceAttachmentPropertyPage
 public class InternalBasedSourceAttacherImpl36 implements SourceAttacher {
 
-	public boolean attachSource(IPackageFragmentRoot fRoot, String newSourcePath)
-			throws CoreException {
+    public boolean attachSource(IPackageFragmentRoot fRoot, String newSourcePath)
+            throws CoreException {
 
-		IPath fContainerPath;
-		IClasspathEntry fEntry;
+        IPath fContainerPath;
+        IClasspathEntry fEntry;
 
-		try {
-			fContainerPath= null;
-			fEntry= null;
-			if (fRoot == null || fRoot.getKind() != IPackageFragmentRoot.K_BINARY) {
-				// error
-				Logger.debug("error(!=K_BINARY)", null);
-				return false;
-			}
+        try {
+            fContainerPath= null;
+            fEntry= null;
+            if (fRoot == null || fRoot.getKind() != IPackageFragmentRoot.K_BINARY) {
+                // error
+                Logger.debug("error(!=K_BINARY)", null);
+                return false;
+            }
 
-			IPath containerPath= null;
-			IJavaProject jproject= fRoot.getJavaProject();
-			IClasspathEntry entry0 = JavaModelUtil.getClasspathEntry(fRoot);
-			if (entry0.getEntryKind() == IClasspathEntry.CPE_CONTAINER) {
-				containerPath= entry0.getPath();
-				ClasspathContainerInitializer initializer= JavaCore.getClasspathContainerInitializer(containerPath.segment(0));
-				IClasspathContainer container= JavaCore.getClasspathContainer(containerPath, jproject);
-				if (initializer == null || container == null) {
-					// error
-					Logger.debug("error(initializer == null || container == null)", null);
-					return false;
-				}
+            IPath containerPath= null;
+            IJavaProject jproject= fRoot.getJavaProject();
+            IClasspathEntry entry0 = JavaModelUtil.getClasspathEntry(fRoot);
+            if (entry0.getEntryKind() == IClasspathEntry.CPE_CONTAINER) {
+                containerPath= entry0.getPath();
+                ClasspathContainerInitializer initializer= JavaCore.getClasspathContainerInitializer(containerPath.segment(0));
+                IClasspathContainer container= JavaCore.getClasspathContainer(containerPath, jproject);
+                if (initializer == null || container == null) {
+                    // error
+                    Logger.debug("error(initializer == null || container == null)", null);
+                    return false;
+                }
 
-				IStatus status= initializer.getSourceAttachmentStatus(containerPath, jproject);
-				if (status.getCode() == ClasspathContainerInitializer.ATTRIBUTE_NOT_SUPPORTED) {
-					// error
-					Logger.debug("error(ATTRIBUTE_NOT_SUPPORTED)", null);
-					return false;
-				}
-				if (status.getCode() == ClasspathContainerInitializer.ATTRIBUTE_READ_ONLY) {
-					// error
-					Logger.debug("error(ATTRIBUTE_READ_ONLY)", null);
-					return false;
-				}
-				entry0= JavaModelUtil.findEntryInContainer(container, fRoot.getPath());
-			}
-			fContainerPath= containerPath;
-			fEntry= entry0;
+                IStatus status= initializer.getSourceAttachmentStatus(containerPath, jproject);
+                if (status.getCode() == ClasspathContainerInitializer.ATTRIBUTE_NOT_SUPPORTED) {
+                    // error
+                    Logger.debug("error(ATTRIBUTE_NOT_SUPPORTED)", null);
+                    return false;
+                }
+                if (status.getCode() == ClasspathContainerInitializer.ATTRIBUTE_READ_ONLY) {
+                    // error
+                    Logger.debug("error(ATTRIBUTE_READ_ONLY)", null);
+                    return false;
+                }
+                entry0= JavaModelUtil.findEntryInContainer(container, fRoot.getPath());
+            }
+            fContainerPath= containerPath;
+            fEntry= entry0;
 
 
-			// getNewEntry()
-			IClasspathEntry entry;
-			CPListElement elem= CPListElement.createFromExisting(fEntry, null);
-			IPath srcAttPath = Path.fromOSString(newSourcePath).makeAbsolute();
-			if (fEntry.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
-	        	File sourceAttacherDir = new File(newSourcePath).getParentFile();
-	            JavaCore.setClasspathVariable("SOURCE_ATTACHER",
-	                    new Path(sourceAttacherDir.getAbsolutePath()), null);
-	            srcAttPath = new Path("SOURCE_ATTACHER/" + new File(newSourcePath).getName());
-			}
-			elem.setAttribute(CPListElement.SOURCEATTACHMENT, srcAttPath);
-			entry = elem.getClasspathEntry();
+            // getNewEntry()
+            IClasspathEntry entry;
+            CPListElement elem= CPListElement.createFromExisting(fEntry, null);
+            IPath srcAttPath = Path.fromOSString(newSourcePath).makeAbsolute();
+            if (fEntry.getEntryKind() == IClasspathEntry.CPE_VARIABLE) {
+                File sourceAttacherDir = new File(newSourcePath).getParentFile();
+                JavaCore.setClasspathVariable("SOURCE_ATTACHER",
+                        new Path(sourceAttacherDir.getAbsolutePath()), null);
+                srcAttPath = new Path("SOURCE_ATTACHER/" + new File(newSourcePath).getName());
+            }
+            elem.setAttribute(CPListElement.SOURCEATTACHMENT, srcAttPath);
+            entry = elem.getClasspathEntry();
 
-			if (entry.equals(fEntry)) {
-				Logger.debug("NO CHANGE", null);
-				return true; // no change
-			}
+            if (entry.equals(fEntry)) {
+                Logger.debug("NO CHANGE", null);
+                return true; // no change
+            }
 
-			IClasspathEntry newEntry = entry;
-			boolean isReferencedEntry = fEntry.getReferencingEntry() != null;
+            IClasspathEntry newEntry = entry;
+            boolean isReferencedEntry = fEntry.getReferencingEntry() != null;
 
-			String[] changedAttributes= { CPListElement.SOURCEATTACHMENT };
-			BuildPathSupport.modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor());
+            String[] changedAttributes= { CPListElement.SOURCEATTACHMENT };
+            BuildPathSupport.modifyClasspathEntry(null, newEntry, changedAttributes, jproject, fContainerPath, isReferencedEntry, new NullProgressMonitor());
 
-		} catch (CoreException e) {
-			// error
-			Logger.debug("error", e);
-			return false;
-		}
+        } catch (CoreException e) {
+            // error
+            Logger.debug("error", e);
+            return false;
+        }
 
-		return true;
-	}
+        return true;
+    }
 }

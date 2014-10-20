@@ -21,48 +21,48 @@ import org.freejava.tools.handlers.classpathutil.Logger;
 
 public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
-	private boolean canceled = false;
+    private boolean canceled = false;
 
-	// http://www.mmnt.ru/int/get?st={0}
-	// http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter
-	private String urlPattern;
+    // http://www.mmnt.ru/int/get?st={0}
+    // http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter
+    private String urlPattern;
 
 
     public EclipsePluginSourceByUrlPatternFinder(String urlPattern) {
-    	this.urlPattern = urlPattern;
+        this.urlPattern = urlPattern;
     }
 
-	@Override
-	public String toString() {
-		return this.getClass() + "; urlPattern=" + urlPattern;
-	}
+    @Override
+    public String toString() {
+        return this.getClass() + "; urlPattern=" + urlPattern;
+    }
 
-	public void cancel() {
-		this.canceled = true;
-	}
+    public void cancel() {
+        this.canceled = true;
+    }
 
-	public void find(String binFile, List<SourceFileResult> results) {
-		File bin = new File(binFile);
+    public void find(String binFile, List<SourceFileResult> results) {
+        File bin = new File(binFile);
         String result[] = null;
         try {
-	        String fileName = bin.getName();
-        	int position = fileName.lastIndexOf('_');
-	        if (position != -1) {
-	        	String baseName = fileName.substring(0, position);
-	        	String version = fileName.substring(position + 1);
-		        String sourceFileName = baseName + ".source_" + version;
-		        result = findFile(sourceFileName, bin);
-	        }
+            String fileName = bin.getName();
+            int position = fileName.lastIndexOf('_');
+            if (position != -1) {
+                String baseName = fileName.substring(0, position);
+                String version = fileName.substring(position + 1);
+                String sourceFileName = baseName + ".source_" + version;
+                result = findFile(sourceFileName, bin);
+            }
         } catch (Exception e) {
-			e.printStackTrace();
-		}
+            e.printStackTrace();
+        }
 
         if (result != null && result[0] != null) {
-        	String name = result[0].substring(result[0].lastIndexOf('/') + 1);
+            String name = result[0].substring(result[0].lastIndexOf('/') + 1);
 
-    		SourceFileResult object = new SourceFileResult(binFile, result[1], name, 50);
-    		Logger.debug(this.toString() + " FOUND: " + object, null);
-    		results.add(object);
+            SourceFileResult object = new SourceFileResult(binFile, result[1], name, 50);
+            Logger.debug(this.toString() + " FOUND: " + object, null);
+            results.add(object);
 
         }
     }
@@ -85,7 +85,7 @@ public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFin
 
         for (String url1 : links) {
             String tmpFile = download(url1);
-        	if (tmpFile != null && isSourceCodeFor(tmpFile, bin.getAbsolutePath())) {
+            if (tmpFile != null && isSourceCodeFor(tmpFile, bin.getAbsolutePath())) {
                 file = tmpFile;
                 url = url1;
                 break;
@@ -145,14 +145,14 @@ public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFin
     }
 
     public static void main(String[] args) {
-    	EclipsePluginSourceByUrlPatternFinder finder = new EclipsePluginSourceByUrlPatternFinder("http://www.mmnt.ru/int/get?st={0}");
-    	List<SourceFileResult> results = new ArrayList<SourceFileResult>();
-    	//finder.find("d:\\programs\\eclipse_mk4\\eclipse\\plugins\\org.eclipse.jdt.apt.core_3.3.500.v20110420-1015.jar", results);
-    	//System.out.println(results.get(0).getSource());
+        EclipsePluginSourceByUrlPatternFinder finder = new EclipsePluginSourceByUrlPatternFinder("http://www.mmnt.ru/int/get?st={0}");
+        List<SourceFileResult> results = new ArrayList<SourceFileResult>();
+        //finder.find("d:\\programs\\eclipse_mk4\\eclipse\\plugins\\org.eclipse.jdt.apt.core_3.3.500.v20110420-1015.jar", results);
+        //System.out.println(results.get(0).getSource());
 
-    	finder = new EclipsePluginSourceByUrlPatternFinder("http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter");
-    	results = new ArrayList<SourceFileResult>();
-    	finder.find("d:\\programs\\eclipse_mk4\\eclipse\\plugins\\org.eclipse.jdt.apt.core_3.3.500.v20110420-1015.jar", results);
-    	System.out.println(results.get(0).getSource());
-	}
+        finder = new EclipsePluginSourceByUrlPatternFinder("http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter");
+        results = new ArrayList<SourceFileResult>();
+        finder.find("d:\\programs\\eclipse_mk4\\eclipse\\plugins\\org.eclipse.jdt.apt.core_3.3.500.v20110420-1015.jar", results);
+        System.out.println(results.get(0).getSource());
+    }
 }
