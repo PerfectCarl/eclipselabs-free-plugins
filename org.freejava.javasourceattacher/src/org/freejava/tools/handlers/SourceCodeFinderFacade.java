@@ -52,7 +52,7 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
             new NexusSourceCodeFinder("http://nexus.xwiki.org/nexus/index.html"),
 
             new EclipsePluginSourceByUrlPatternFinder("http://www.mmnt.ru/int/get?st={0}"),
-            new EclipsePluginSourceByUrlPatternFinder("http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter"),
+            new EclipsePluginSourceByUrlPatternFinder("http://www.filewatcher.com/_/?q={0}"),
             new EclipsePluginSourceByGoogleCSESourceCodeFinder(),
 
             new SourceAttacherServiceSourceCodeFinder()//,
