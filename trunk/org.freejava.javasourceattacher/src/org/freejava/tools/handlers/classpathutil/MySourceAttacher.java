@@ -10,7 +10,7 @@ import org.eclipse.jdt.core.JavaCore;
 
 public class MySourceAttacher implements SourceAttacher {
 
-	public boolean attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
+    public boolean attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
 
         IJavaProject javaProject = root.getJavaProject();
         IClasspathEntry[] entries = (IClasspathEntry[]) javaProject.getRawClasspath().clone();
@@ -31,16 +31,16 @@ public class MySourceAttacher implements SourceAttacher {
             }
         }
         if (!attached) {
-        	root.attachSource(new Path(sourcePath), null, null);
+            root.attachSource(new Path(sourcePath), null, null);
         }
-    	javaProject.setRawClasspath(entries, null);
-    	return true;
+        javaProject.setRawClasspath(entries, null);
+        return true;
     }
 
     private static IClasspathEntry addSourceAttachment(
             IPackageFragmentRoot root, IClasspathEntry entry,
             String sourcePath, String sourceRoot) throws Exception {
-    	IClasspathEntry result;
+        IClasspathEntry result;
         int entryKind = entry.getEntryKind();
         // CPE_PROJECT, CPE_LIBRARY, CPE_SOURCE, CPE_VARIABLE or CPE_CONTAINER
         switch (entryKind) {
@@ -52,7 +52,7 @@ public class MySourceAttacher implements SourceAttacher {
                     entry.isExported());
             break;
         case IClasspathEntry.CPE_VARIABLE:
-        	File sourceAttacherDir = new File(sourcePath).getParentFile();
+            File sourceAttacherDir = new File(sourcePath).getParentFile();
             JavaCore.setClasspathVariable("SOURCE_ATTACHER",
                     new Path(sourceAttacherDir.getAbsolutePath()), null);
             Path varAttPath = new Path("SOURCE_ATTACHER/"

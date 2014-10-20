@@ -29,20 +29,20 @@ public class GAV {
     }
 
     public String getArtifactLink() {
-		return artifactLink;
-	}
+        return artifactLink;
+    }
     public void setArtifactLink(String artifactLink) {
-		this.artifactLink = artifactLink;
-	}
+        this.artifactLink = artifactLink;
+    }
 
     @Override
     public boolean equals(Object obj) {
-    	return EqualsBuilder.reflectionEquals(this, obj);
+        return EqualsBuilder.reflectionEquals(this, obj);
     }
 
     @Override
     public int hashCode() {
-    	return HashCodeBuilder.reflectionHashCode(this);
+        return HashCodeBuilder.reflectionHashCode(this);
     }
 
 }

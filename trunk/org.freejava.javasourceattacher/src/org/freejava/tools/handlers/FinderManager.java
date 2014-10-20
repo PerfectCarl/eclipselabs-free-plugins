@@ -15,23 +15,23 @@ public class FinderManager {
 
     public boolean isRunning() {
         boolean result = false;
-    	for (int i = 0; i < workers.length; i++) {
+        for (int i = 0; i < workers.length; i++) {
             if (workers[i] != null && workers[i].isAlive()) {
-            	result = true;
-            	break;
+                result = true;
+                break;
             }
         }
-    	return result;
+        return result;
     }
 
     public void cancel() {
-    	for (int i = 0; i < workers.length; i++) {
+        for (int i = 0; i < workers.length; i++) {
             if (workers[i] != null && workers[i].isAlive()) {
-            	workers[i].cancel();
+                workers[i].cancel();
             }
         }
     }
-	public void findSources(List<String> libs, List<SourceFileResult> results) {
+    public void findSources(List<String> libs, List<SourceFileResult> results) {
 
         // Create the work queue
         WorkQueue queue = new WorkQueue();
@@ -84,8 +84,8 @@ public class FinderManager {
         }
 
         public void cancel() {
-        	canceled = true;
-        	this.finder.cancel();
+            canceled = true;
+            this.finder.cancel();
         }
 
         public void run() {
@@ -98,7 +98,7 @@ public class FinderManager {
                     this.finder.find(binFile, results);
                 }
             } catch (InterruptedException e) {
-            	e.printStackTrace();
+                e.printStackTrace();
             }
         }
     }

@@ -27,77 +27,77 @@ import org.apache.commons.io.IOUtils;
 
 public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 
-	protected Collection<GAV> findGAVFromFile(String binFile) throws Exception {
+    protected Collection<GAV> findGAVFromFile(String binFile) throws Exception {
         Set<GAV> gavs = new HashSet<GAV>();
 
-		// META-INF/maven/commons-beanutils/commons-beanutils/pom.properties
-	    ZipInputStream in = new ZipInputStream(new FileInputStream(binFile));
-    	byte[] data = new byte[2048];
-	    do {
-	    	ZipEntry entry = in.getNextEntry();
-	    	if (entry == null) {
-	    		break;
-	    	}
+        // META-INF/maven/commons-beanutils/commons-beanutils/pom.properties
+        ZipInputStream in = new ZipInputStream(new FileInputStream(binFile));
+        byte[] data = new byte[2048];
+        do {
+            ZipEntry entry = in.getNextEntry();
+            if (entry == null) {
+                break;
+            }
 
-	    	String zipEntryName = entry.getName();
-	        if (zipEntryName.startsWith("META-INF/maven/") && zipEntryName.endsWith("/pom.properties")) {
-		    	ByteArrayOutputStream os = new ByteArrayOutputStream();
-	        	do {
-	        		int read = in.read(data);
-	        		if (read < 0) break;
-	        		os.write(data, 0, read);
-	        	} while (true);
-	        	Properties props = new Properties();
-	        	props.load(new ByteArrayInputStream(os.toByteArray()));
-	        	String version = props.getProperty("version");
-	        	String groupId = props.getProperty("groupId");
-	        	String artifactId = props.getProperty("artifactId");
-	        	if (version != null && groupId != null && artifactId != null) {
-	                GAV gav = new GAV();
-	                gav.setG(groupId);
-	                gav.setA(artifactId);
-	                gav.setV(version);
-	                gavs.add(gav);
-	        	}
-	        }
-	    } while (true);
+            String zipEntryName = entry.getName();
+            if (zipEntryName.startsWith("META-INF/maven/") && zipEntryName.endsWith("/pom.properties")) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                do {
+                    int read = in.read(data);
+                    if (read < 0) break;
+                    os.write(data, 0, read);
+                } while (true);
+                Properties props = new Properties();
+                props.load(new ByteArrayInputStream(os.toByteArray()));
+                String version = props.getProperty("version");
+                String groupId = props.getProperty("groupId");
+                String artifactId = props.getProperty("artifactId");
+                if (version != null && groupId != null && artifactId != null) {
+                    GAV gav = new GAV();
+                    gav.setG(groupId);
+                    gav.setA(artifactId);
+                    gav.setV(version);
+                    gavs.add(gav);
+                }
+            }
+        } while (true);
 
-	    if (gavs.size() > 1) gavs.clear(); // a merged file, the result will not be correct
-		return gavs;
-	}
+        if (gavs.size() > 1) gavs.clear(); // a merged file, the result will not be correct
+        return gavs;
+    }
 
 
     @SuppressWarnings("rawtypes")
-	protected static boolean isSourceCodeFor(String src, String bin) {
+    protected static boolean isSourceCodeFor(String src, String bin) {
         boolean result = false;
         try {
-	        List<String> binList = new ArrayList<String>();
-	        ZipFile zf = new ZipFile(bin);
-	        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
-	            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
-	            binList.add(zipEntryName);
-	        }
+            List<String> binList = new ArrayList<String>();
+            ZipFile zf = new ZipFile(bin);
+            for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+                String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+                binList.add(zipEntryName);
+            }
 
-	        zf = new ZipFile(src);
-	        for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
-	            String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
-	            String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
-	            String fileExt = FilenameUtils.getExtension(zipEntryName);
-	            if ("java".equals(fileExt) && fileBaseName != null) {
-	                for (String zipEntryName2 : binList) {
-	                    String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
-	                    String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
-	                    if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
-	                        result = true;
-	                        return result;
-	                    }
-	                }
-	            }
-	            binList.add(zipEntryName);
-	        }
+            zf = new ZipFile(src);
+            for (Enumeration entries = zf.entries(); entries.hasMoreElements();) {
+                String zipEntryName = ((ZipEntry)entries.nextElement()).getName();
+                String fileBaseName = FilenameUtils.getBaseName(zipEntryName);
+                String fileExt = FilenameUtils.getExtension(zipEntryName);
+                if ("java".equals(fileExt) && fileBaseName != null) {
+                    for (String zipEntryName2 : binList) {
+                        String fileBaseName2 = FilenameUtils.getBaseName(zipEntryName2);
+                        String fileExt2 = FilenameUtils.getExtension(zipEntryName2);
+                        if ("class".equals(fileExt2) && fileBaseName.equals(fileBaseName2)) {
+                            result = true;
+                            return result;
+                        }
+                    }
+                }
+                binList.add(zipEntryName);
+            }
         } catch (Exception e) {
-			e.printStackTrace();
-		}
+            e.printStackTrace();
+        }
 
         return result;
     }
@@ -110,11 +110,11 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
         try {
             URLConnection conn = new URL(url).openConnection();
             is = openConnectionCheckRedirects(conn);
-        	os = FileUtils.openOutputStream(file);
+            os = FileUtils.openOutputStream(file);
             IOUtils.copy(is, os);
         } catch (Exception e) {
             IOUtils.closeQuietly(os);
-        	file.delete();
+            file.delete();
         } finally {
             IOUtils.closeQuietly(os);
             IOUtils.closeQuietly(is);
