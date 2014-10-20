@@ -150,7 +150,7 @@ public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFin
         //finder.find("d:\\programs\\eclipse_mk4\\eclipse\\plugins\\org.eclipse.jdt.apt.core_3.3.500.v20110420-1015.jar", results);
         //System.out.println(results.get(0).getSource());
 
-        finder = new EclipsePluginSourceByUrlPatternFinder("http://www.searchftps.com/indexer/search.aspx?__LASTFOCUS=&__EVENTTARGET=ctl00%24MainContent%24SearchButton&__EVENTARGUMENT=&ctl00%24MainContent%24SearchKeywordTextBox={0}&ctl00%24MainContent%24SearchTypeDropDownList=And&ctl00%24MainContent%24SearchOrderDropDownList=DateDesc&ctl00%24MainContent%24SearchFilterDropDownList=NoFilter");
+        finder = new EclipsePluginSourceByUrlPatternFinder("http://www.filewatcher.com/_/?q={0}");
         results = new ArrayList<SourceFileResult>();
         finder.find("d:\\programs\\eclipse_mk4\\eclipse\\plugins\\org.eclipse.jdt.apt.core_3.3.500.v20110420-1015.jar", results);
         System.out.println(results.get(0).getSource());
