@@ -1,7 +1,6 @@
 package org.freejava.tools.handlers;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
@@ -20,7 +19,6 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.freejava.tools.handlers.classpathutil.Logger;
@@ -29,7 +27,7 @@ import com.google.common.io.Files;
 
 public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implements SourceCodeFinder {
 
-    private boolean canceled = false;
+    protected boolean canceled = false;
     private String serviceUrl;
 
     public ArtifactorySourceCodeFinder(String serviceUrl) {
@@ -74,7 +72,7 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
         for (Map.Entry<GAV, String> entry : sourcesUrls.entrySet()) {
             String name = entry.getKey().getA() + '-' + entry.getKey().getV() + "-sources.jar";
             try {
-                String result = download(entry.getValue());
+                String result = new UrlDownloader().download(entry.getValue());
                 if (result != null && isSourceCodeFor(result, binFile)) {
                     SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
                     Logger.debug(this.toString() + " FOUND: " + object, null);
@@ -86,7 +84,7 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
         }
     }
 
-    private Map<GAV, String> findSourcesUsingArtifactory(Collection<GAV> gavs) throws Exception {
+    protected Map<GAV, String> findSourcesUsingArtifactory(Collection<GAV> gavs) throws Exception {
         Map<GAV, String> results = new HashMap<GAV, String>();
         for (GAV gav : gavs) {
             if (canceled) return results;
@@ -94,7 +92,7 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
             for (GAV gav2 : gavs2) {
                 if (gav2.getArtifactLink().endsWith("-sources.jar") || gav2.getArtifactLink().endsWith("-sources.zip")) {
                     String uri = gav2.getArtifactLink();
-                    File file = new File(download(uri));
+                    File file = new File(new UrlDownloader().download(uri));
                     String json = FileUtils.readFileToString(file);
                     JSONObject resp = (JSONObject) JSONSerializer.toJSON( json );
                     results.put(gav, resp.getString("downloadUri"));
@@ -143,7 +141,7 @@ public class ArtifactorySourceCodeFinder extends AbstractSourceCodeFinder implem
                     GAV gav = new GAV();
                     String group = gavInArray[0];
                     for (int i = 1; i < gavInArray.length-3; i++) {
-                        group += gavInArray[i];
+                        group += "." + gavInArray[i];
                     }
                     gav.setG(group);
 

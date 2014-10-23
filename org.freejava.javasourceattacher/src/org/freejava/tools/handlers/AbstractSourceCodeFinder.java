@@ -24,6 +24,22 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.maven.scm.ScmBranch;
+import org.apache.maven.scm.ScmException;
+import org.apache.maven.scm.ScmFile;
+import org.apache.maven.scm.ScmFileSet;
+import org.apache.maven.scm.ScmRevision;
+import org.apache.maven.scm.ScmTag;
+import org.apache.maven.scm.ScmVersion;
+import org.apache.maven.scm.command.checkout.CheckOutScmResult;
+import org.apache.maven.scm.manager.BasicScmManager;
+import org.apache.maven.scm.manager.NoSuchScmProviderException;
+import org.apache.maven.scm.manager.ScmManager;
+import org.apache.maven.scm.repository.ScmRepository;
+import org.apache.maven.scm.repository.ScmRepositoryException;
+
+import com.google.common.io.Files;
 
 public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
 
@@ -102,73 +118,5 @@ public abstract class AbstractSourceCodeFinder implements SourceCodeFinder {
         return result;
     }
 
-    protected static String download(String url) throws Exception {
-        File file = File.createTempFile("ssourceattacher", ".tmp");
 
-        InputStream is = null;
-        OutputStream os = null;
-        try {
-            URLConnection conn = new URL(url).openConnection();
-            is = openConnectionCheckRedirects(conn);
-            os = FileUtils.openOutputStream(file);
-            IOUtils.copy(is, os);
-        } catch (Exception e) {
-            IOUtils.closeQuietly(os);
-            file.delete();
-        } finally {
-            IOUtils.closeQuietly(os);
-            IOUtils.closeQuietly(is);
-        }
-
-        return file.getAbsolutePath();
-    }
-
-    private static InputStream openConnectionCheckRedirects(URLConnection c) throws IOException
-    {
-       boolean redir;
-       int redirects = 0;
-       InputStream in = null;
-       do
-       {
-          if (c instanceof HttpURLConnection)
-          {
-             ((HttpURLConnection) c).setInstanceFollowRedirects(false);
-             c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7");
-          }
-
-          // We want to open the input stream before getting headers
-          // because getHeaderField() et al swallow IOExceptions.
-          in = c.getInputStream();
-          redir = false;
-          if (c instanceof HttpURLConnection)
-          {
-             HttpURLConnection http = (HttpURLConnection) c;
-             int stat = http.getResponseCode();
-             if (stat >= 300 && stat <= 307 && stat != 306 &&
-                stat != HttpURLConnection.HTTP_NOT_MODIFIED)
-             {
-                URL base = http.getURL();
-                String loc = http.getHeaderField("Location");
-                URL target = null;
-                if (loc != null)
-                {
-                   target = new URL(base, loc);
-                }
-                http.disconnect();
-                // Redirection should be allowed only for HTTP and HTTPS
-                // and should be limited to 5 redirections at most.
-                if (target == null || !(target.getProtocol().equals("http")
-                   || target.getProtocol().equals("https"))
-                   || redirects >= 5)
-                {
-                   throw new SecurityException("illegal URL redirect");
-                }
-                redir = true;
-                c = target.openConnection();
-                redirects++;
-             }
-          }
-       } while (redir);
-       return in;
-    }
 }

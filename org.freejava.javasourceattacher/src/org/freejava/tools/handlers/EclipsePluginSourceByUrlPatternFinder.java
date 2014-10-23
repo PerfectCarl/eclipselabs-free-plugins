@@ -84,7 +84,7 @@ public class EclipsePluginSourceByUrlPatternFinder extends AbstractSourceCodeFin
         }
 
         for (String url1 : links) {
-            String tmpFile = download(url1);
+            String tmpFile = new UrlDownloader().download(url1);
             if (tmpFile != null && isSourceCodeFor(tmpFile, bin.getAbsolutePath())) {
                 file = tmpFile;
                 url = url1;

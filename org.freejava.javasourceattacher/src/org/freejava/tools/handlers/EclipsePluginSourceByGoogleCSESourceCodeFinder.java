@@ -88,7 +88,7 @@ public class EclipsePluginSourceByGoogleCSESourceCodeFinder extends AbstractSour
 
         for (String url1 : links) {
             if (canceled) return null;
-            String tmpFile = download(url1);
+            String tmpFile = new UrlDownloader().download(url1);
             if (tmpFile != null && isSourceCodeFor(tmpFile, bin.getAbsolutePath())) {
                 file = tmpFile;
                 url = url1;

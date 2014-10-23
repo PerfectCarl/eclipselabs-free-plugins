@@ -37,17 +37,17 @@ public class SourceCodeFinderFacade implements SourceCodeFinder {
 */
     private SourceCodeFinder[] finders = new SourceCodeFinder[]{
             new MavenRepoSourceCodeFinder(),
-            new NexusSourceCodeFinder("http://repository.sonatype.org/index.html"),
+            new NexusSourceCodeFinder("https://repository.sonatype.org/index.html"),
             new NexusSourceCodeFinder("https://repository.apache.org/index.html"),
             new NexusSourceCodeFinder("https://repository.jboss.org/nexus/index.html"),
-            new NexusSourceCodeFinder("http://oss.sonatype.org/index.html"),
+            new NexusSourceCodeFinder("https://oss.sonatype.org/index.html"),
             new WebBasedArtifactorySourceCodeFinder("http://repo.springsource.org/webapp/home.html"),
             new NexusSourceCodeFinder("http://repository.ow2.org/nexus/index.html"),
             new NexusSourceCodeFinder("https://nexus.codehaus.org/index.html"),
             new NexusSourceCodeFinder("https://maven.java.net/index.html"),
-            new NexusSourceCodeFinder("http://maven2.exoplatform.org/index.html"),
-            new NexusSourceCodeFinder("http://maven.nuxeo.org/nexus/index.html"),
-            new NexusSourceCodeFinder("http://maven.alfresco.com/nexus/index.html"),
+            new NexusSourceCodeFinder("https://maven2.exoplatform.org/index.html"),
+            new NexusSourceCodeFinder("https://maven.nuxeo.org/nexus/index.html"),
+            new NexusSourceCodeFinder("https://maven.alfresco.com/nexus/index.html"),
             new ArtifactorySourceCodeFinder("https://repository.cloudera.com/artifactory/webapp/home.html"),
             new NexusSourceCodeFinder("http://nexus.xwiki.org/nexus/index.html"),
 
