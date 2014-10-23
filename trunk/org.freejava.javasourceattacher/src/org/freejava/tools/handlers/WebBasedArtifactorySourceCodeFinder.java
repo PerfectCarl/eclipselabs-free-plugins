@@ -56,7 +56,7 @@ public class WebBasedArtifactorySourceCodeFinder extends ArtifactorySourceCodeFi
             String url = StringUtils.trim(output);
             if (StringUtils.isNotEmpty(url)) {
                 String name = url.substring(url.lastIndexOf('/')+1);
-                String result = download(url);
+                String result = new UrlDownloader().download(url);
                 if (result != null && isSourceCodeFor(result, binFile)) {
                     SourceFileResult object = new SourceFileResult(binFile, result, name, 100);
                     Logger.debug(this.toString() + " FOUND: " + object, null);

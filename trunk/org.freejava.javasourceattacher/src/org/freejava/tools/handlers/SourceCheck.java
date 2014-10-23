@@ -2,11 +2,8 @@ package org.freejava.tools.handlers;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -24,7 +21,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.google.common.collect.Sets;
@@ -98,22 +94,8 @@ public class SourceCheck {
         }
     }
 
-    private static File download(String str) throws IOException {
-        File result;
-        URL url = new URL(str);
-        InputStream is = null;
-        OutputStream os = null;
-        try {
-            is = url.openStream();
-            File tmp = File.createTempFile("tmp", ".zip");
-            os = new FileOutputStream(tmp);
-            IOUtils.copy(is, os);
-            result = tmp;
-        } finally {
-            IOUtils.closeQuietly(is);
-            IOUtils.closeQuietly(os);
-        }
-        return result;
+    private static File download(String str) throws Exception {
+        return new File(new UrlDownloader().download(str));
     }
 
     public static boolean isWrongSource(File srcFile, File binFile) throws IOException {

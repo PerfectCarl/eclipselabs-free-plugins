@@ -62,7 +62,7 @@ public class SourceAttacherServiceSourceCodeFinder extends AbstractSourceCodeFin
                         JSONArray ar = source.getJSONArray("urls");
                         if (ar != null && !ar.isEmpty()) {
                             String url1 = ar.getString(0);
-                            String tmpFile = download(url1);
+                            String tmpFile = new UrlDownloader().download(url1);
                             if (tmpFile != null && isSourceCodeFor(tmpFile, bin.getAbsolutePath())) {
                                 fileDownloaded = tmpFile;
                                 url = url1;

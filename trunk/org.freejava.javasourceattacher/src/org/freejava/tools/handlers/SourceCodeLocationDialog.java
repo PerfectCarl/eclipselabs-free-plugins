@@ -196,13 +196,12 @@ public class SourceCodeLocationDialog extends TitleAreaDialog {
                 public IStatus validate(Object value) {
                     if (value instanceof String) {
                         String s = value.toString();
-                         String[] schemes = {"http","https"};
-                         UrlValidator urlValidator = new UrlValidator(schemes);
-                        if (StringUtils.isBlank(s) || urlValidator.isValid(s)) {
+                         String[] schemes = {"http","https", "ftp"};
+                        if (StringUtils.isBlank(s) || StringUtils.startsWith(s, "scm:") || new UrlValidator(schemes).isValid(s)) {
                             return ValidationStatus.ok();
                         }
                     }
-                    return ValidationStatus.error("Not an URL");
+                    return ValidationStatus.error("Not an valid URL or Maven SCM URL");
                 }
             };
             UpdateValueStrategy strategy2 = new UpdateValueStrategy();
