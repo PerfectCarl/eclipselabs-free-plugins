@@ -101,7 +101,8 @@ public class UrlDownloader {
 
             if (checkoutDirectory.exists() && checkoutDirectory.list().length > 0) {
                 zipFolder(checkoutDirectory, file);
-                delete(checkoutDirectory);
+                // do not delete to avoid slowing down
+                //delete(checkoutDirectory);
             }
         }
 
@@ -117,6 +118,8 @@ public class UrlDownloader {
 
     public void zipFolder(File srcFolder, File destZipFile) {
         Zip zipper = new Zip();
+        zipper.setCompress(false);
+        zipper.setLevel(0);
         zipper.setDestFile(destZipFile);
         zipper.setBasedir(srcFolder);
         zipper.setTaskName("zip");
