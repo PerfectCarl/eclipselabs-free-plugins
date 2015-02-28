@@ -16,11 +16,12 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.jdt.internal.ui.wizards.buildpaths.BuildPathSupport;
 import org.eclipse.jdt.internal.ui.wizards.buildpaths.CPListElement;
+import org.eclipse.swt.widgets.Shell;
 
 // copied and modified from org.eclipse.jdt.internal.ui.preferences.SourceAttachmentPropertyPage
 public class InternalBasedSourceAttacherImpl36 implements SourceAttacher {
 
-    public boolean attachSource(IPackageFragmentRoot fRoot, String newSourcePath)
+    public boolean attachSource(final Shell shell, IPackageFragmentRoot fRoot, String newSourcePath)
             throws CoreException {
 
         IPath fContainerPath;

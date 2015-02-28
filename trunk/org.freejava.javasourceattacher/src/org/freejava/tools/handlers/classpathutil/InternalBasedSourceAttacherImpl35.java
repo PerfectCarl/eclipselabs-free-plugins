@@ -25,7 +25,7 @@ import org.eclipse.swt.widgets.Shell;
 // copied and modified from org.eclipse.jdt.internal.ui.preferences.SourceAttachmentPropertyPage
 public class InternalBasedSourceAttacherImpl35 implements SourceAttacher {
 
-    public boolean attachSource(IPackageFragmentRoot fRoot, String newSourcePath)
+    public boolean attachSource(final Shell shell, IPackageFragmentRoot fRoot, String newSourcePath)
             throws CoreException {
 
         IPath fContainerPath;

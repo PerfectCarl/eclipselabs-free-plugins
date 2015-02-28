@@ -7,10 +7,11 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.swt.widgets.Shell;
 
 public class MySourceAttacher implements SourceAttacher {
 
-    public boolean attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
+    public boolean attachSource(final Shell shell, IPackageFragmentRoot root, String sourcePath) throws Exception {
 
         IJavaProject javaProject = root.getJavaProject();
         IClasspathEntry[] entries = (IClasspathEntry[]) javaProject.getRawClasspath().clone();
