@@ -148,7 +148,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         mgr.findSources(libs, responses);
 
         while (!monitor.isCanceled() && mgr.isRunning() && !notProcessedLibs.isEmpty()) {
-            processLibSources(requests, notProcessedLibs, responses);
+            processLibSources(shell, requests, notProcessedLibs, responses);
             try {
                 Thread.sleep(1000);
             } catch (Exception e) {
@@ -160,7 +160,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         mgr.cancel();
 
         if (!notProcessedLibs.isEmpty()) {
-            processLibSources(requests, notProcessedLibs, responses);
+            processLibSources(shell, requests, notProcessedLibs, responses);
         }
 
         // Source not found
@@ -178,7 +178,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         return Status.OK_STATUS;
     }
 
-    private static void processLibSources(
+    private static void processLibSources(final Shell shell,
             Map<String, IPackageFragmentRoot> requests,
             Set<String> notProcessedLibs, List<SourceFileResult> responses) {
         while (!responses.isEmpty()) {
@@ -198,7 +198,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
                     if (!sourceFile.exists()) {
                         FileUtils.copyFile(new File(source), sourceFile);
                     }
-                    attachSource(pkgRoot, sourceFile.getAbsolutePath());
+                    attachSource(shell, pkgRoot, sourceFile.getAbsolutePath());
                 } catch (Exception e) {
                     // ignore
                     Logger.debug("Cannot attach to " + pkgRoot.getResource().getLocation().toOSString(), e);
@@ -206,7 +206,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             }
         }
     }
-    private static void attachSource(IPackageFragmentRoot root, String sourcePath) throws Exception {
+    private static void attachSource(final Shell shell, IPackageFragmentRoot root, String sourcePath) throws Exception {
         SourceAttacher attacher;
 
         boolean attached = false;
@@ -214,7 +214,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
         try {
             attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl36").newInstance();
             Logger.debug("Trying (using InternalBasedSourceAttacherImpl36):  " + sourcePath, null);
-            attached = attacher.attachSource(root, sourcePath);
+            attached = attacher.attachSource(shell, root, sourcePath);
         } catch (Throwable e) {
             Logger.debug("Exception when trying InternalBasedSourceAttacherImpl36 to attach to " + sourcePath, e);
         }
@@ -224,7 +224,7 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             try {
                 attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.InternalBasedSourceAttacherImpl35").newInstance();
                 Logger.debug("Trying (using InternalBasedSourceAttacherImpl35):  " + sourcePath, null);
-                attached = attacher.attachSource(root, sourcePath);
+                attached = attacher.attachSource(shell, root, sourcePath);
             } catch (Throwable e) {
                 Logger.debug("Exception when trying InternalBasedSourceAttacherImpl35 to attach to " + sourcePath, e);
             }
@@ -234,11 +234,23 @@ public class JavaSourceAttacherHandler extends AbstractHandler {
             // For android projects or projects has readonly source for classpath entry, we must for to use source path anyway using our custom attacher class
             Logger.debug("Previous attempt failed:  " + sourcePath, null);
             try {
-                attacher = new MySourceAttacher();
+                attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.MySourceAttacher").newInstance();
                 Logger.debug("Trying (using MySourceAttacher):  " + sourcePath, null);
-                attached = attacher.attachSource(root, sourcePath);
+                attached = attacher.attachSource(shell, root, sourcePath);
             } catch (Throwable e) {
                 Logger.debug("Exception when trying MySourceAttacher to attach to " + sourcePath, e);
+            }
+        }
+
+        if (!attached) {
+            // For android projects or projects has readonly source for classpath entry, we must for to use source path anyway using our custom attacher class
+            Logger.debug("Previous attempt failed:  " + sourcePath, null);
+            try {
+                attacher = (SourceAttacher) Class.forName("org.freejava.tools.handlers.classpathutil.MySourceAttacher2").newInstance();
+                Logger.debug("Trying (using MySourceAttacher2):  " + sourcePath, null);
+                attached = attacher.attachSource(shell, root, sourcePath);
+            } catch (Throwable e) {
+                Logger.debug("Exception when trying MySourceAttacher2 to attach to " + sourcePath, e);
             }
         }
 
